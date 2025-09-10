@@ -522,6 +522,8 @@ def run_cli_menu(csv_path: str = "transactions.csv") -> None:
         "2) Enter a transaction\n"
         "3) View totals (Income / Expenses / Net)\n"
         "4) View category summary\n"
+        "5) Edit a transaction\n"
+        "6) Delete a transaction\n"
         "0) Exit and Gig'em\n"
         "Choose an option: "
     )
@@ -537,6 +539,16 @@ def run_cli_menu(csv_path: str = "transactions.csv") -> None:
             _render_totals(csv_path)
         elif choice == "4":
             print_category_summary(csv_path)
+        elif choice == "5":
+            print("")
+            print("***********************")
+            print("'Edit' not implemented.")
+            print("***********************")
+        elif choice == "6":
+            print("")
+            print("*************************")
+            print("'Delete' not implemented.")
+            print("*************************")
         elif choice == "0":
             print("Goodbye! 👋")
             break
