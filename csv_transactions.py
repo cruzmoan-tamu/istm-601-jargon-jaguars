@@ -516,12 +516,13 @@ def run_cli_menu(csv_path: str = "transactions.csv") -> None:
     _ensure_csv_exists(csv_path)
 
     MENU = (
+        "\n=== SHOW ME THE MONEY!!! ===\n"
         "\n=== Personal Finance Tracker ===\n"
         "1) View transactions\n"
         "2) Enter a transaction\n"
         "3) View totals (Income / Expenses / Net)\n"
         "4) View category summary\n"
-        "0) Exit\n"
+        "0) Exit and Gig'em\n"
         "Choose an option: "
     )
 
