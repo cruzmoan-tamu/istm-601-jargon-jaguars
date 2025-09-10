@@ -33,10 +33,11 @@ from tabulate import tabulate
 
 CSV_HEADERS = ["id", "datetime", "category", "amount", "description"]
 
-# Optional: define an allowed set of categories. Set to None to allow any string.
+# Optional: define an allowed set of categories.Set to None to allow any string.
 DEFAULT_ALLOWED_CATEGORIES: Optional[Iterable[str]] = None
 # Example:
-# DEFAULT_ALLOWED_CATEGORIES = {"Income", "Groceries", "Rent", "Utilities", "Dining", "Transport", "Entertainment", "Savings"}
+# DEFAULT_ALLOWED_CATEGORIES = {"Income", "Groceries", "Rent", "Utilities", 
+# "Dining", "Transport", "Entertainment", "Savings"}
 
 
 @dataclass
@@ -90,7 +91,8 @@ def _read_all(csv_path: str) -> List[Transaction]:
     with open(csv_path, "r", newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
-            # Be tolerant to missing columns (but we keep the schema strict on write)
+            # Be tolerant to missing columns 
+            # (but we keep the schema strict on write)
             tx = Transaction(
                 id=row.get("id", "").strip(),
                 datetime=row.get("datetime", "").strip(),
@@ -109,7 +111,8 @@ def _write_all(csv_path: str, txs: List[Transaction]) -> None:
 
 # ---------- Validation ----------
 
-def _parse_and_normalize_datetime(dt_str: str) -> Tuple[Optional[str], Optional[str]]:
+def _parse_and_normalize_datetime(
+    dt_str: str)->Tuple[Optional[str],Optional[str]]:
     """
     Accept a few common formats and normalize to ISO 8601 'YYYY-MM-DDTHH:MM:SS'.
     Returns (normalized_str, error) where one will be None.
@@ -130,7 +133,8 @@ def _parse_and_normalize_datetime(dt_str: str) -> Tuple[Optional[str], Optional[
             return norm, None
         except ValueError:
             continue
-    return None, f"Invalid datetime format: '{dt_str}'. Expected ISO-like (e.g., 2025-09-02T14:30:00)."
+    return None, f"Invalid datetime format: '{dt_str}'. " \
+                  "Expected ISO-like (e.g., 2025-09-02T14:30:00)."
 
 
 def _validate_amount(amount_str: str) -> Tuple[Optional[str], Optional[str]]:
@@ -184,7 +188,8 @@ def validate_transaction(
         if allowed_categories is not None:
             allowed = {c.strip() for c in allowed_categories}
             if cat not in allowed:
-                errors.append(f"Category '{cat}' is not in the allowed set: {sorted(allowed)}")
+                errors.append(f"Category '{cat}' is not in the allowed " \
+                               "set: {sorted(allowed)}")
         normalized["category"] = cat
 
     # amount
@@ -282,7 +287,7 @@ def update_transaction(
             new_dt = datetime_str if datetime_str is not None else tx.datetime
             new_cat = category if category is not None else tx.category
             new_amt = amount_str if amount_str is not None else tx.amount
-            new_desc = description if description is not None else tx.description
+            new_desc=description if description is not None else tx.description
 
             ok, errs, normalized = validate_transaction(
                 datetime_str=new_dt,
@@ -423,7 +428,11 @@ def print_category_summary(csv_path: str) -> None:
     print(f"{'Category':<20} {'Income':>10} {'Expenses':>10} {'Net':>10}")
     print("-" * 55)
     for cat, vals in totals.items():
-        print(f"{cat:<20} {vals['income']:>10.2f} {vals['expenses']:>10.2f} {vals['net']:>10.2f}")
+        print(
+                f"{cat:<20} {vals['income']:>10.2f} "
+                f"{vals['expenses']:>10.2f} {vals['net']:>10.2f}"
+            )
+
 
 
 # MENU FLOW BEGIN
@@ -433,7 +442,11 @@ def _render_transactions_table(csv_path: str) -> None:
     txs = read_transactions(csv_path)
     rows = []
     for t in txs:
-        desc = t.description if len(t.description) <= 40 else t.description[:37] + "..."
+        desc = (
+                    t.description if len(t.description) <= 40
+                    else t.description[:37] + "..."
+                )
+
         rows.append({
             "id": t.id,
             "datetime": t.datetime,
@@ -563,4 +576,5 @@ def run_cli_menu(csv_path: str = "transactions.csv") -> None:
 if __name__ == "__main__":
     # call main
     main()
+
     pass
