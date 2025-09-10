@@ -48,6 +48,39 @@ class Transaction:
     description: str
 
 
+# main function - the start of the program
+def main():
+
+    # main variables
+    processComplete = False
+    yesString = "Would you like to try again?  Enter 1 for yes:"
+    
+    while processComplete == False:
+
+        # Simple smoke test (optional demo).
+        CSV_FILE = "transactions.csv"
+        # Uncomment to run a quick demo:
+        create_transaction(CSV_FILE, datetime_str="2025-09-02 14:35", category="Groceries", amount_str="-54.27", description="Weekly grocery run")
+        # print(read_transactions(CSV_FILE))
+        print(tabulate(read_transactions(CSV_FILE), headers="keys", floatfmt=".2f"))
+        # print(get_totals(CSV_FILE))
+        # print(tabulate(get_totals(CSV_FILE), headers="keys", floatfmt=".2f"))
+        totals = get_totals(CSV_FILE)
+        print(tabulate([totals], headers="keys", floatfmt=".2f"))
+
+
+        yesValue = input(yesString)
+
+        if yesValue == "1":
+            # try again
+            processComplete = False
+        else:
+            # complete process
+            processComplete = True
+
+    print("The program is complete. Gig'em! ;-)")
+
+
 # ---------- Utilities ----------
 
 def _ensure_csv_exists(csv_path: str) -> None:
@@ -422,14 +455,6 @@ def print_category_summary(csv_path: str) -> None:
 
 
 if __name__ == "__main__":
-    # Simple smoke test (optional demo).
-    CSV_FILE = "transactions.csv"
-    # Uncomment to run a quick demo:
-    create_transaction(CSV_FILE, datetime_str="2025-09-02 14:35", category="Groceries", amount_str="-54.27", description="Weekly grocery run")
-    # print(read_transactions(CSV_FILE))
-    print(tabulate(read_transactions(CSV_FILE), headers="keys", floatfmt=".2f"))
-    # print(get_totals(CSV_FILE))
-    # print(tabulate(get_totals(CSV_FILE), headers="keys", floatfmt=".2f"))
-    totals = get_totals(CSV_FILE)
-    print(tabulate([totals], headers="keys", floatfmt=".2f"))
+    # call main
+    main()
     pass
