@@ -50,35 +50,8 @@ class Transaction:
 
 # main function - the start of the program
 def main():
+    run_cli_menu("transactions.csv")
 
-    # main variables
-    processComplete = False
-    yesString = "Would you like to try again?  Enter 1 for yes:"
-    
-    while processComplete == False:
-
-        # Simple smoke test (optional demo).
-        CSV_FILE = "transactions.csv"
-        # Uncomment to run a quick demo:
-        create_transaction(CSV_FILE, datetime_str="2025-09-02 14:35", category="Groceries", amount_str="-54.27", description="Weekly grocery run")
-        # print(read_transactions(CSV_FILE))
-        print(tabulate(read_transactions(CSV_FILE), headers="keys", floatfmt=".2f"))
-        # print(get_totals(CSV_FILE))
-        # print(tabulate(get_totals(CSV_FILE), headers="keys", floatfmt=".2f"))
-        totals = get_totals(CSV_FILE)
-        print(tabulate([totals], headers="keys", floatfmt=".2f"))
-
-
-        yesValue = input(yesString)
-
-        if yesValue == "1":
-            # try again
-            processComplete = False
-        else:
-            # complete process
-            processComplete = True
-
-    print("The program is complete. Gig'em! ;-)")
 
 
 # ---------- Utilities ----------
@@ -451,6 +424,126 @@ def print_category_summary(csv_path: str) -> None:
     print("-" * 55)
     for cat, vals in totals.items():
         print(f"{cat:<20} {vals['income']:>10.2f} {vals['expenses']:>10.2f} {vals['net']:>10.2f}")
+
+
+# MENU FLOW BEGIN
+
+def _render_transactions_table(csv_path: str) -> None:
+    """Pretty-print all transactions (truncate long descriptions)."""
+    txs = read_transactions(csv_path)
+    rows = []
+    for t in txs:
+        desc = t.description if len(t.description) <= 40 else t.description[:37] + "..."
+        rows.append({
+            "id": t.id,
+            "datetime": t.datetime,
+            "category": t.category,
+            "amount": f"{Decimal(t.amount):.2f}",
+            "description": desc,
+        })
+    if rows:
+        print(tabulate(rows, headers="keys", floatfmt=".2f"))
+    else:
+        print("No transactions found.")
+
+
+def _prompt_nonempty(prompt: str) -> str:
+    while True:
+        s = input(prompt).strip()
+        if s:
+            return s
+        print("Value cannot be empty. Please try again.")
+
+
+def _prompt_amount(prompt: str) -> str:
+    """Prompt until a valid decimal with 2 places is entered."""
+    while True:
+        s = input(prompt).strip()
+        try:
+            d = Decimal(s)
+            return f"{d.quantize(Decimal('0.01')):.2f}"
+        except Exception:
+            print("Invalid amount. Example formats: 12.34, -45.00, 0")
+
+
+def _prompt_datetime(prompt: str) -> str:
+    """Accept a few common formats; normalize via your validator."""
+    while True:
+        s = input(prompt).strip()
+        norm, err = _parse_and_normalize_datetime(s)
+        if not err:
+            return norm
+        print(err)
+
+
+def _enter_transaction_flow(csv_path: str) -> None:
+    """Interactive entry for a single transaction."""
+    print("\nEnter a new transaction")
+    print("-" * 30)
+    dt = _prompt_datetime(
+        "Datetime (e.g., 2025-09-02 14:30 or 2025-09-02T14:30): "
+    )
+    cat = _prompt_nonempty("Category: ")
+    amt = _prompt_amount("Amount (neg for expense, pos for income): ")
+    desc = _prompt_nonempty("Description: ")
+
+    try:
+        create_transaction(
+            csv_path,
+            datetime_str=dt,
+            category=cat,
+            amount_str=amt,
+            description=desc,
+        )
+        print("✔ Transaction saved.")
+    except ValueError as ex:
+        print(f"✖ Validation errors: {ex}")
+    except Exception as ex:
+        print(f"✖ Unexpected error: {ex}")
+
+
+def _render_totals(csv_path: str) -> None:
+    totals = get_totals(csv_path)
+    # Show a one-row table
+    print(tabulate([totals], headers="keys", floatfmt=".2f"))
+
+
+def run_cli_menu(csv_path: str = "transactions.csv") -> None:
+    """
+    Interactive CLI menu to view transactions, enter a transaction,
+    or view totals/category summary. Loops until user exits.
+    """
+    _ensure_csv_exists(csv_path)
+
+    MENU = (
+        "\n=== Personal Finance Tracker ===\n"
+        "1) View transactions\n"
+        "2) Enter a transaction\n"
+        "3) View totals (Income / Expenses / Net)\n"
+        "4) View category summary\n"
+        "0) Exit\n"
+        "Choose an option: "
+    )
+
+    while True:
+        choice = input(MENU).strip()
+
+        if choice == "1":
+            _render_transactions_table(csv_path)
+        elif choice == "2":
+            _enter_transaction_flow(csv_path)
+        elif choice == "3":
+            _render_totals(csv_path)
+        elif choice == "4":
+            print_category_summary(csv_path)
+        elif choice == "0":
+            print("Goodbye! 👋")
+            break
+        else:
+            print("Invalid option. Please choose 0–4.")
+
+
+# MENU FLOW END
 
 
 
