@@ -1,0 +1,43 @@
+# Top-most EditorConfig file
+root = true
+
+##############################
+# C# settings
+##############################
+[*.cs]
+
+# Use UTF-8 encoding
+charset = utf-8
+
+# Indentation
+indent_style = space
+indent_size = 4
+
+# Line endings
+end_of_line = crlf
+insert_final_newline = true
+
+# Maximum line length
+max_line_length = 80
+
+# Treat long lines as warnings
+dotnet_diagnostic.IDE0055.severity = warning
+
+##############################
+# Python settings
+##############################
+[*.py]
+
+# Use UTF-8 encoding
+charset = utf-8
+
+# Indentation
+indent_style = space
+indent_size = 4
+
+# Line endings
+end_of_line = lf
+insert_final_newline = true
+
+# Maximum line length (PEP8 standard)
+max_line_length = 80

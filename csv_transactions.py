@@ -29,6 +29,7 @@ from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from typing import Iterable, List, Optional, Tuple, Dict
 from collections import defaultdict
+from tabulate import tabulate
 
 CSV_HEADERS = ["id", "datetime", "category", "amount", "description"]
 
@@ -416,14 +417,19 @@ def print_category_summary(csv_path: str) -> None:
     print(f"{'Category':<20} {'Income':>10} {'Expenses':>10} {'Net':>10}")
     print("-" * 55)
     for cat, vals in totals.items():
-        print(f\"{cat:<20} {vals['income']:>10.2f} {vals['expenses']:>10.2f} {vals['net']:>10.2f}\")
+        print(f"{cat:<20} {vals['income']:>10.2f} {vals['expenses']:>10.2f} {vals['net']:>10.2f}")
+
 
 
 if __name__ == "__main__":
     # Simple smoke test (optional demo).
     CSV_FILE = "transactions.csv"
     # Uncomment to run a quick demo:
-    # create_transaction(CSV_FILE, datetime_str="2025-09-02 14:35", category="Groceries", amount_str="-54.27", description="Weekly grocery run")
+    create_transaction(CSV_FILE, datetime_str="2025-09-02 14:35", category="Groceries", amount_str="-54.27", description="Weekly grocery run")
     # print(read_transactions(CSV_FILE))
+    print(tabulate(read_transactions(CSV_FILE), headers="keys", floatfmt=".2f"))
     # print(get_totals(CSV_FILE))
+    # print(tabulate(get_totals(CSV_FILE), headers="keys", floatfmt=".2f"))
+    totals = get_totals(CSV_FILE)
+    print(tabulate([totals], headers="keys", floatfmt=".2f"))
     pass
