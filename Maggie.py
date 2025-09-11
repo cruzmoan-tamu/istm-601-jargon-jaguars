@@ -9,7 +9,6 @@ def main():
         while True:
             date = input("Enter transaction date (mm-dd-yy): ")
             
-            # Check the format first
             if not re.match(pattern,date):
                 print("Invalid format. Please enter date in mm-dd-yy format.")
                 continue
@@ -29,7 +28,7 @@ def main():
             if len(description) == 0:
                 print("Description cannot be empty")
                 continue
-            elif len(description) > 100:
+            elif len(description) > 75:
                 print("Invalid! Too many characters.")
                 continue
             else:
@@ -96,7 +95,6 @@ def main():
             else:
                 print("Invalid input! Please enter a number 1 or 2.")
                 
-    # Ask if they want to continue and make sure it's yes or no
     while True:
         date_value = date()  
         description_value = description()
@@ -107,7 +105,6 @@ def main():
         # remove extra spaces and convert word to lower case
         again = input("Do you want to enter another transaction? (yes/no): ").strip().lower()
         
-        # Ends the code if user enters no
         if again == "no":
             print("Thanks and Gig 'Em")
             break
@@ -116,8 +113,6 @@ def main():
             continue
         else:
             print("Invalid input. Please enter yes or no.")
-    
-
     
 
 if __name__ == "__main__":
@@ -129,4 +124,5 @@ if __name__ == "__main__":
     
     
     
+
     
