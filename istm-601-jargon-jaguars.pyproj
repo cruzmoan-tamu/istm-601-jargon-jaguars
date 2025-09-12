@@ -20,10 +20,14 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="csv_transactions.py" />
+    <Compile Include="Maggie.py" />
     <Compile Include="test_csv_transactions.py" />
+    <Compile Include="totals.py" />
+    <Compile Include="update_transaction.py" />
   </ItemGroup>
   <ItemGroup>
     <Content Include=".editorconfig" />
+    <Content Include="transactions.csv" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
 </Project>
