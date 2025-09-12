@@ -43,7 +43,9 @@ def main():
             "3": "Personal & Lifestyle",
             "4": "Healthcare & Insurance",
             "5": "Family & Education",
-            "6": "Miscellaneous"
+            "6": "Miscellaneous",
+            "7": "Earned Income",
+            "8": "Unearned Income"
         }
         while True:
             category = input(
@@ -54,13 +56,16 @@ def main():
                 "4 - Healthcare & Insurance\n"
                 "5 - Family & Education\n"
                 "6 - Miscellaneous\n"
+                "7 - Earned Income\n"
+                "8 - Unearned Income\n"
+                
             ).strip()
             
             if category in categories:
                 print("Category selected: ", categories[category])
                 return categories[category]
             else:
-                print("Invalid input! Please enter a number 1 or 2.")
+                print("Invalid input! Please enter a number 1 to 8.")
    
     def amount():
          while True:
@@ -126,3 +131,4 @@ if __name__ == "__main__":
     
 
     
+
