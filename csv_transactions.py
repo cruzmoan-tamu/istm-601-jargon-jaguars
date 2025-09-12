@@ -214,8 +214,8 @@ def create_transaction(
     ok, errs, normalized = validate_transaction(
         datetime_str=datetime_str,
         category=category,
-        amount=amount_str,
-        type=type,
+        amount_str=amount_str,
+        type_str=type,
         description=description,
         allowed_categories=allowed_categories,
     )
@@ -386,21 +386,20 @@ def print_category_summary(csv_path: str) -> None:
 
 
 
-# UPDATE CSV BEGIN
+# INSERT CSV BEGIN
 
 def date():
-    
     pattern = r"^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$"
-
+        
     while True:
         date = input("Enter transaction date (yyyy-mm-dd): ")
             
         if not re.match(pattern,date):
-            print("Invalid format. Please enter date in mm-dd-yy format.")
+            print("Invalid format. Please enter date in yyyy-mm-dd format.")
             continue
             
         try:
-            datetime.strptime(date, "%m-%d-%y")
+            datetime.strptime(date, "%Y-%m-%d")
             print("Date entered:", date)
             return date
         except ValueError:
@@ -486,7 +485,7 @@ def typed():
         else:
             print("Invalid input! Please enter a number 1 or 2.")
 
-# UPDATE CSV END
+# INSERT CSV END
 
 
 # UPDATE CSV BEGIN
