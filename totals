@@ -9,19 +9,23 @@ def CalculateTotals(CsvFile):
         DataFrame['amount'], errors='coerce'
     )
 
-    # Total income (positive values)
-    TotalIncome = DataFrame[DataFrame['amount'] > 0]['amount'].sum()
+    # Total income
+    TotalIncome = DataFrame[
+        DataFrame['type'].str.lower() == 'income'
+    ]['amount'].sum()
 
     # Total expenses (absolute value of negatives)
-    TotalExpenses = DataFrame[DataFrame['amount'] < 0]['amount'].sum()
+    TotalExpenses = DataFrame[
+        DataFrame['type'].str.lower() == 'expense'
+    ]['amount'].sum()
 
-    # Net savings (income + expenses, since expenses are negative)
-    NetSavings = DataFrame['amount'].sum()
+    # Net savings
+    NetSavings = TotalIncome + TotalExpenses
 
     # Format and print results
     print("===== Financial Summary =====")
     print(f"Total Income:   ${TotalIncome:,.2f}")
     print(f"Total Expenses: ${abs(TotalExpenses):,.2f}")
     print(f"Net Savings:    ${NetSavings:,.2f}")
-    
+
     return TotalIncome, TotalExpenses, NetSavings
