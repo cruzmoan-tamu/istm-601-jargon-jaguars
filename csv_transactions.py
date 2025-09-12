@@ -29,13 +29,15 @@ from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from typing import Iterable, List, Optional, Tuple, Dict
 from collections import defaultdict
+from tabulate import tabulate
 
 CSV_HEADERS = ["id", "datetime", "category", "amount", "description"]
 
-# Optional: define an allowed set of categories. Set to None to allow any string.
+# Optional: define an allowed set of categories.Set to None to allow any string.
 DEFAULT_ALLOWED_CATEGORIES: Optional[Iterable[str]] = None
 # Example:
-# DEFAULT_ALLOWED_CATEGORIES = {"Income", "Groceries", "Rent", "Utilities", "Dining", "Transport", "Entertainment", "Savings"}
+# DEFAULT_ALLOWED_CATEGORIES = {"Income", "Groceries", "Rent", "Utilities", 
+# "Dining", "Transport", "Entertainment", "Savings"}
 
 
 @dataclass
@@ -45,6 +47,12 @@ class Transaction:
     category: str
     amount: str     # Decimal as string (e.g., "-12.34")
     description: str
+
+
+# main function - the start of the program
+def main():
+    run_cli_menu("transactions.csv")
+
 
 
 # ---------- Utilities ----------
@@ -83,7 +91,8 @@ def _read_all(csv_path: str) -> List[Transaction]:
     with open(csv_path, "r", newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
-            # Be tolerant to missing columns (but we keep the schema strict on write)
+            # Be tolerant to missing columns 
+            # (but we keep the schema strict on write)
             tx = Transaction(
                 id=row.get("id", "").strip(),
                 datetime=row.get("datetime", "").strip(),
@@ -102,7 +111,8 @@ def _write_all(csv_path: str, txs: List[Transaction]) -> None:
 
 # ---------- Validation ----------
 
-def _parse_and_normalize_datetime(dt_str: str) -> Tuple[Optional[str], Optional[str]]:
+def _parse_and_normalize_datetime(
+    dt_str: str)->Tuple[Optional[str],Optional[str]]:
     """
     Accept a few common formats and normalize to ISO 8601 'YYYY-MM-DDTHH:MM:SS'.
     Returns (normalized_str, error) where one will be None.
@@ -123,7 +133,8 @@ def _parse_and_normalize_datetime(dt_str: str) -> Tuple[Optional[str], Optional[
             return norm, None
         except ValueError:
             continue
-    return None, f"Invalid datetime format: '{dt_str}'. Expected ISO-like (e.g., 2025-09-02T14:30:00)."
+    return None, f"Invalid datetime format: '{dt_str}'. " \
+                  "Expected ISO-like (e.g., 2025-09-02T14:30:00)."
 
 
 def _validate_amount(amount_str: str) -> Tuple[Optional[str], Optional[str]]:
@@ -177,7 +188,8 @@ def validate_transaction(
         if allowed_categories is not None:
             allowed = {c.strip() for c in allowed_categories}
             if cat not in allowed:
-                errors.append(f"Category '{cat}' is not in the allowed set: {sorted(allowed)}")
+                errors.append(f"Category '{cat}' is not in the allowed " \
+                               "set: {sorted(allowed)}")
         normalized["category"] = cat
 
     # amount
@@ -275,7 +287,7 @@ def update_transaction(
             new_dt = datetime_str if datetime_str is not None else tx.datetime
             new_cat = category if category is not None else tx.category
             new_amt = amount_str if amount_str is not None else tx.amount
-            new_desc = description if description is not None else tx.description
+            new_desc=description if description is not None else tx.description
 
             ok, errs, normalized = validate_transaction(
                 datetime_str=new_dt,
@@ -416,14 +428,159 @@ def print_category_summary(csv_path: str) -> None:
     print(f"{'Category':<20} {'Income':>10} {'Expenses':>10} {'Net':>10}")
     print("-" * 55)
     for cat, vals in totals.items():
-        print(f\"{cat:<20} {vals['income']:>10.2f} {vals['expenses']:>10.2f} {vals['net']:>10.2f}\")
+        print(
+                f"{cat:<20} {vals['income']:>10.2f} "
+                f"{vals['expenses']:>10.2f} {vals['net']:>10.2f}"
+            )
+
+
+
+# MENU FLOW BEGIN
+
+def _render_transactions_table(csv_path: str) -> None:
+    """Pretty-print all transactions (truncate long descriptions)."""
+    txs = read_transactions(csv_path)
+    rows = []
+    for t in txs:
+        desc = (
+                    t.description if len(t.description) <= 40
+                    else t.description[:37] + "..."
+                )
+
+        rows.append({
+            "id": t.id,
+            "datetime": t.datetime,
+            "category": t.category,
+            "amount": f"{Decimal(t.amount):.2f}",
+            "description": desc,
+        })
+    if rows:
+        print(tabulate(rows, headers="keys", floatfmt=".2f"))
+    else:
+        print("No transactions found.")
+
+
+def _prompt_nonempty(prompt: str) -> str:
+    while True:
+        s = input(prompt).strip()
+        if s:
+            return s
+        print("Value cannot be empty. Please try again.")
+
+
+def _prompt_amount(prompt: str) -> str:
+    """Prompt until a valid decimal with 2 places is entered."""
+    while True:
+        s = input(prompt).strip()
+        try:
+            d = Decimal(s)
+            return f"{d.quantize(Decimal('0.01')):.2f}"
+        except Exception:
+            print("Invalid amount. Example formats: 12.34, -45.00, 0")
+
+
+def _prompt_datetime(prompt: str) -> str:
+    """Accept a few common formats; normalize via your validator."""
+    while True:
+        s = input(prompt).strip()
+        norm, err = _parse_and_normalize_datetime(s)
+        if not err:
+            return norm
+        print(err)
+
+
+def _enter_transaction_flow(csv_path: str) -> None:
+    """Interactive entry for a single transaction."""
+    print("\nEnter a new transaction")
+    print("-" * 30)
+    dt = _prompt_datetime(
+        "Datetime (e.g., 2025-09-02 14:30 or 2025-09-02T14:30): "
+    )
+    cat = _prompt_nonempty("Category: ")
+    amt = _prompt_amount("Amount (neg for expense, pos for income): ")
+    desc = _prompt_nonempty("Description: ")
+
+    try:
+        create_transaction(
+            csv_path,
+            datetime_str=dt,
+            category=cat,
+            amount_str=amt,
+            description=desc,
+        )
+        print("✔ Transaction saved.")
+    except ValueError as ex:
+        print(f"✖ Validation errors: {ex}")
+    except Exception as ex:
+        print(f"✖ Unexpected error: {ex}")
+
+
+def _render_totals(csv_path: str) -> None:
+    totals = get_totals(csv_path)
+    # Show a one-row table
+    print(tabulate([totals], headers="keys", floatfmt=".2f"))
+
+
+def run_cli_menu(csv_path: str = "transactions.csv") -> None:
+    """
+    Interactive CLI menu to view transactions, enter a transaction,
+    or view totals/category summary. Loops until user exits.
+    """
+    _ensure_csv_exists(csv_path)
+
+    MENU = (
+        "\n=== SHOW ME THE MONEY!!! ===\n"
+        "\n=== Personal Finance Tracker ===\n"
+        "1) View transactions\n"
+        "2) Enter a transaction\n"
+        "3) View totals (Income / Expenses / Net)\n"
+        "4) View category summary\n"
+        "5) Edit a transaction\n"
+        "6) Delete a transaction\n"
+        "0) Exit and Gig'em\n"
+        "Choose an option: "
+    )
+
+    while True:
+        choice = input(MENU).strip()
+
+        if choice == "1":
+            _render_transactions_table(csv_path)
+        elif choice == "2":
+            _enter_transaction_flow(csv_path)
+        elif choice == "3":
+            _render_totals(csv_path)
+        elif choice == "4":
+            print_category_summary(csv_path)
+        elif choice == "5":
+            print("")
+            print("***********************")
+            print("'Edit' not implemented.")
+            print("***********************")
+        elif choice == "6":
+            tx_id = input("Enter ID of the transcation to delete: ").strip()
+            confirmed = input("Are you sure you want to delete this transaction? (y/n): ").strip().lower()
+            if confirmed == "y":
+                success = delete_transaction(csv_path, tx_id)
+                if success == True:
+                    print("Transaction deleted.")
+                else:
+                    print("Transaction not found.")
+            else:
+                print("Deletion cancelled.")
+        elif choice == "0":
+            print("Goodbye! 👋")
+            break
+        else:
+            print("Invalid option. Please choose 0–4.")
+
+
+# MENU FLOW END
+
 
 
 if __name__ == "__main__":
-    # Simple smoke test (optional demo).
-    CSV_FILE = "transactions.csv"
-    # Uncomment to run a quick demo:
-    # create_transaction(CSV_FILE, datetime_str="2025-09-02 14:35", category="Groceries", amount_str="-54.27", description="Weekly grocery run")
-    # print(read_transactions(CSV_FILE))
-    # print(get_totals(CSV_FILE))
+    # call main
+    main()
+
     pass
