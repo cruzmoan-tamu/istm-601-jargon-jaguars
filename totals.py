@@ -1,8 +1,8 @@
 import pandas as pd
 
-def CalculateTotals(CsvFile):
+def CalculateTotals():
     # Load CSV
-    DataFrame = pd.read_csv(CsvFile)
+    DataFrame = pd.read_csv("transactions.csv")
 
     # Ensure amounts are numeric
     DataFrame['amount'] = pd.to_numeric(
@@ -29,3 +29,7 @@ def CalculateTotals(CsvFile):
     print(f"Net Savings:    ${NetSavings:,.2f}")
 
     return TotalIncome, TotalExpenses, NetSavings
+
+
+# Run the function
+CalculateTotals()
