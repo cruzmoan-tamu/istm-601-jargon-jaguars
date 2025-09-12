@@ -4,17 +4,17 @@ import re
 def main():
     
     def date():
-        pattern = r"^(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])-\d{2}$"
+        pattern = r"^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$"
         
         while True:
-            date = input("Enter transaction date (mm-dd-yy): ")
+            date = input("Enter transaction date (yyyy-mm-dd): ")
             
             if not re.match(pattern,date):
-                print("Invalid format. Please enter date in mm-dd-yy format.")
+                print("Invalid format. Please enter date in yyyy-mm-dd format.")
                 continue
             
             try:
-                datetime.strptime(date, "%m-%d-%y")
+                datetime.strptime(date, "%Y-%m-%d")
                 print("Date entered:", date)
                 return date
             except ValueError:
@@ -131,3 +131,4 @@ if __name__ == "__main__":
     
 
     
+
