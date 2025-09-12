@@ -36,6 +36,20 @@ def main():
                 return description
             
             
+    def amount():
+         while True:
+             amount = input("Enter transaction amount: ")
+             
+             try:
+                 value = float(amount)
+                 if value < 0:
+                     print("Amount cannot be negative.")
+                     continue
+                 print("Amount entered:", f"{value:.2f}")
+                 return value 
+             except ValueError:
+                 print("Invalid input. Please enter numbers only.") 
+                 
     def category():
         categories = {
             "1": "Living Expenses",
@@ -61,21 +75,7 @@ def main():
                 return categories[category]
             else:
                 print("Invalid input! Please enter a number 1 or 2.")
-   
-    def amount():
-         while True:
-             amount = input("Enter transaction amount: ")
-             
-             try:
-                 value = float(amount)
-                 if value < 0:
-                     print("Amount cannot be negative.")
-                     continue
-                 print("Amount entered:", f"{value:.2f}")
-                 return value 
-             except ValueError:
-                 print("Invalid input. Please enter numbers only.")       
-    
+       
     
     def typed():
         types = {
@@ -126,4 +126,5 @@ if __name__ == "__main__":
     
 
     
+
 
