@@ -35,7 +35,24 @@ def main():
                 print("Description entered:", description)
                 return description
             
+    def typed():
+        types = {
+            "1": "Income",
+            "2": "Expense",
+        }
+        while True:
+            typed = input(
+                "Enter type by number:\n"
+                "1 - Income\n"
+                "2 - Expense\n"
+            ).strip()
             
+            if typed in types:
+                print("Type selected: ", types[typed])
+                return types[typed]
+            else:
+                print("Invalid input! Please enter a number 1 or 2.")    
+                
     def category():
         categories = {
             "1": "Living Expenses",
@@ -81,25 +98,7 @@ def main():
              except ValueError:
                  print("Invalid input. Please enter numbers only.")       
     
-    
-    def typed():
-        types = {
-            "1": "Income",
-            "2": "Expense",
-        }
-        while True:
-            typed = input(
-                "Enter category by number:\n"
-                "1 - Income\n"
-                "2 - Expense\n"
-            ).strip()
-            
-            if typed in types:
-                print("Category selected: ", types[typed])
-                return types[typed]
-            else:
-                print("Invalid input! Please enter a number 1 or 2.")
-                
+                   
     while True:
         date_value = date()  
         description_value = description()
@@ -131,4 +130,5 @@ if __name__ == "__main__":
     
 
     
+
 
