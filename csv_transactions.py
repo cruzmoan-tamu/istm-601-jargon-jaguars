@@ -31,7 +31,7 @@ from typing import Iterable, List, Optional, Tuple, Dict
 from collections import defaultdict
 from tabulate import tabulate
 
-CSV_HEADERS = ["id", "datetime", "category", "amount", "description"]
+CSV_HEADERS = ["id", "datetime", "category", "amount", "type", "description"]
 
 # Optional: define an allowed set of categories.Set to None to allow any string.
 DEFAULT_ALLOWED_CATEGORIES: Optional[Iterable[str]] = None
@@ -46,6 +46,7 @@ class Transaction:
     datetime: str   # ISO 8601 string
     category: str
     amount: str     # Decimal as string (e.g., "-12.34")
+    type: str
     description: str
 
 
@@ -98,6 +99,7 @@ def _read_all(csv_path: str) -> List[Transaction]:
                 datetime=row.get("datetime", "").strip(),
                 category=row.get("category", "").strip(),
                 amount=row.get("amount", "").strip(),
+                type = row.get("type", "").strip(),
                 description=row.get("description", "").strip(),
             )
             out.append(tx)
@@ -157,7 +159,8 @@ def validate_transaction(
     *,
     datetime_str: str,
     category: str,
-    amount_str: str,
+    amount: str,
+    type: str,
     description: str,
     allowed_categories: Optional[Iterable[str]] = DEFAULT_ALLOWED_CATEGORIES,
     disallow_future: bool = True,
@@ -193,11 +196,18 @@ def validate_transaction(
         normalized["category"] = cat
 
     # amount
-    norm_amt, err_amt = _validate_amount(amount_str)
+    norm_amt, err_amt = _validate_amount(amount)
     if err_amt:
         errors.append(err_amt)
     else:
         normalized["amount"] = norm_amt
+
+    # description
+    type = (type or "").strip()
+    if not type:
+        errors.append("Type is required.")
+    else:
+        normalized["type"] = type
 
     # description
     desc = (description or "").strip()
@@ -434,6 +444,81 @@ def print_category_summary(csv_path: str) -> None:
             )
 
 
+# UPDATE CSV BEGIN
+
+def update_transaction(
+    csv_path: str,
+    tx_id: str,
+    *,
+    datetime_str: Optional[str] = None,
+    category: Optional[str] = None,
+    amount_str: Optional[str] = None,
+    description: Optional[str] = None,
+    type_str: Optional[str] = None,
+    allowed_categories: Optional[Iterable[str]] = DEFAULT_ALLOWED_CATEGORIES,
+) -> Transaction:
+    """
+    Update fields on an existing transaction.
+
+    - Any provided field will be updated and re-validated.
+    - If type_str is provided, amount sign is normalized to match it.
+    - Raises KeyError if id not found.
+    - Raises ValueError on validation errors.
+    - Returns the updated Transaction dataclass instance.
+    """
+    # Load all existing transactions
+    all_txs = _read_all(csv_path)
+
+    # Find the transaction with the matching ID
+    for idx, tx in enumerate(all_txs):
+        if tx.id == tx_id:
+            # Merge user-provided values with current ones.
+            # If a new value is provided, use it; otherwise keep the old one.
+            new_dt   = datetime_str if datetime_str is not None else tx.datetime
+            new_cat  = category    if category    is not None else tx.category
+            new_amt  = amount_str  if amount_str  is not None else tx.amount
+            new_desc = description if description is not None else tx.description
+            new_type = type_str    if type_str    is not None else tx.type
+
+            # Validate the merged data (datetime, category, amount, type, description).
+            # Also ensures amount sign matches the type.
+            ok, errs, normalized = validate_transaction(
+                datetime_str=new_dt,
+                category=new_cat,
+                amount=new_amt,
+                description=new_desc,
+                type=new_type,
+                allowed_categories=allowed_categories,
+            )
+            if not ok:
+                # Abort update if validation fails
+                raise ValueError(f"Validation errors: {errs}")
+
+            # Create a new Transaction object with normalized values
+            updated = Transaction(
+                id=tx.id,
+                datetime=normalized["datetime"],
+                category=normalized["category"],
+                amount=normalized["amount"],
+                type=normalized["type"],
+                description=normalized["description"],
+            )
+
+            # Replace the old transaction with the updated one in the list
+            all_txs[idx] = updated
+
+            # Atomically write the updated list back to CSV
+            _write_all(csv_path, all_txs)
+
+            # Return the updated transaction to caller
+            return updated
+
+    # If no transaction was found with the given ID, raise an error
+    raise KeyError(f"Transaction with id '{tx_id}' not found.")
+
+# UPDATE CSV END
+
+
 
 # MENU FLOW BEGIN
 
@@ -553,10 +638,8 @@ def run_cli_menu(csv_path: str = "transactions.csv") -> None:
         elif choice == "4":
             print_category_summary(csv_path)
         elif choice == "5":
-            print("")
-            print("***********************")
-            print("'Edit' not implemented.")
-            print("***********************")
+            tx_id = input("Enter ID of the transcation to edit: ").strip()
+            update_transaction(csv_path, tx_id)
         elif choice == "6":
             tx_id = input("Enter ID of the transcation to delete: ").strip()
             confirmed = input("Are you sure you want to delete this transaction? (y/n): ").strip().lower()
