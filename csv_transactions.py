@@ -558,10 +558,16 @@ def run_cli_menu(csv_path: str = "transactions.csv") -> None:
             print("'Edit' not implemented.")
             print("***********************")
         elif choice == "6":
-            print("")
-            print("*************************")
-            print("'Delete' not implemented.")
-            print("*************************")
+            tx_id = input("Enter ID of the transcation to delete: ").strip()
+            confirmed = input("Are you sure you want to delete this transaction? (y/n): ").strip().lower()
+            if confirmed == "y":
+                success = delete_transaction(csv_path, tx_id)
+                if success == True:
+                    print("Transaction deleted.")
+                else:
+                    print("Transaction not found.")
+            else:
+                print("Deletion cancelled.")
         elif choice == "0":
             print("Goodbye! 👋")
             break
@@ -576,5 +582,4 @@ def run_cli_menu(csv_path: str = "transactions.csv") -> None:
 if __name__ == "__main__":
     # call main
     main()
-
     pass

@@ -1,0 +1,9 @@
+id,datetime,category,amount,description
+84b21881-4584-4d79-bea2-6dd2ba325dfe,9/9/2025 19:51,Utility,-123.45,Electric bill
+74b21881-4584-4d79-bea2-6dd2ba325dfe,9/8/2025 19:51,Groceries,-325.56,HEB
+64b21881-4584-4d79-bea2-6dd2ba325dfe,9/7/2025 19:51,Transportation,-78.74,Gas station
+54b21881-4584-4d79-bea2-6dd2ba325dfe,9/6/2025 19:51,Entertainment,-33.33,Movies
+44b21881-4584-4d79-bea2-6dd2ba325dfe,9/5/2025 19:51,Income,1234.56,Pay day
+34b21881-4584-4d79-bea2-6dd2ba325dfe,9/4/2025 19:51,Groceries,-56.78,Krogers
+24b21881-4584-4d79-bea2-6dd2ba325dfe,9/3/2025 19:51,Medical,-125.68,Dentist
+14b21881-4584-4d79-bea2-6dd2ba325dfe,9/2/2025 19:51,Entertainment,-24.75,Top Golf
