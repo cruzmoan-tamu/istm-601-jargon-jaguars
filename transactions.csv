@@ -1,0 +1,20 @@
+id,datetime,category,amount,type,description
+84b21881-4584-4d79-bea2-6dd2ba325dfe,9/9/25 19:51,Utility,-123.45,expense,Electric bill
+74b21881-4584-4d79-bea2-6dd2ba325dfe,9/8/25 19:51,Groceries,-325.56,expense,HEB
+64b21881-4584-4d79-bea2-6dd2ba325dfe,2025-09-02T14:30:00,Groceries,-54.27,expense,Weekly grocery run
+54b21881-4584-4d79-bea2-6dd2ba325dfe,9/6/25 19:51,Entertainment,-33.33,expense,Movies
+44b21881-4584-4d79-bea2-6dd2ba325dfe,9/5/25 19:51,Income,1234.56,income,Pay day
+34b21881-4584-4d79-bea2-6dd2ba325dfe,9/4/25 19:51,Groceries,-56.78,expense,Krogers
+24b21881-4584-4d79-bea2-6dd2ba325dfe,9/3/25 19:51,Medical,-125.68,expense,Dentist
+14b21881-4584-4d79-bea2-6dd2ba325dfe,9/2/25 19:51,Entertainment,-24.75,expense,Top Golf
+870ae65f-207b-4883-b909-e2123fe856d2,2025-09-02T14:35:00,Groceries,-54.27,expense,Weekly grocery run
+61377cbc-3198-479c-8c4a-2aa151b4b7c2,2025-09-02T14:35:00,Groceries,-54.27,expense,Weekly grocery run
+0173c5a4-a6bd-4506-af2d-633d29d4fb92,2025-09-02T14:35:00,Groceries,-54.27,expense,Weekly grocery run
+7a5ed264-12ad-4a78-924c-4780c87dee24,2025-09-02T14:35:00,Groceries,-54.27,expense,Weekly grocery run
+52c575a3-24bb-4468-9881-265bf287c46b,2025-09-02T14:35:00,Groceries,-54.27,expense,Weekly grocery run
+8c79ef15-5f45-4c7b-89ad-401dc49c7245,2025-09-02T14:35:00,Groceries,-54.27,expense,Weekly grocery run
+3631c205-88da-4b77-9808-87b1cd24266c,2025-09-02T14:35:00,Groceries,-54.27,expense,Weekly grocery run
+7532c14b-0751-425a-98fb-17682505b56f,2025-09-02T14:35:00,Groceries,-54.27,expense,Weekly grocery run
+df842a9c-4231-465f-b205-916223ebfeb9,2025-09-02T14:35:00,Groceries,-54.27,expense,Weekly grocery run
+6259c893-d504-49c9-b61c-fb61d5f856a7,2025-09-02T14:35:00,Groceries,-54.27,expense,Weekly grocery run
+2dc0942c-289f-4cd2-83fa-8a46c2001d81,2025-06-25T14:35:00,Testing,-200.00,expense,testing

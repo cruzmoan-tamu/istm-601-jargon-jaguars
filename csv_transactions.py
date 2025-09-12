@@ -582,5 +582,4 @@ def run_cli_menu(csv_path: str = "transactions.csv") -> None:
 if __name__ == "__main__":
     # call main
     main()
-
     pass
