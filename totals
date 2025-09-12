@@ -1,25 +1,27 @@
 import pandas as pd
 
-def calculate_totals(csv_file):
+def CalculateTotals(CsvFile):
     # Load CSV
-    df = pd.read_csv(csv_file)
+    DataFrame = pd.read_csv(CsvFile)
 
     # Ensure amounts are numeric
-    df['amount'] = pd.to_numeric(df['amount'], errors='coerce')
+    DataFrame['amount'] = pd.to_numeric(
+        DataFrame['amount'], errors='coerce'
+    )
 
     # Total income (positive values)
-    total_income = df[df['amount'] > 0]['amount'].sum()
+    TotalIncome = DataFrame[DataFrame['amount'] > 0]['amount'].sum()
 
     # Total expenses (absolute value of negatives)
-    total_expenses = df[df['amount'] < 0]['amount'].sum()
+    TotalExpenses = DataFrame[DataFrame['amount'] < 0]['amount'].sum()
 
     # Net savings (income + expenses, since expenses are negative)
-    net_savings = df['amount'].sum()
+    NetSavings = DataFrame['amount'].sum()
 
     # Format and print results
     print("===== Financial Summary =====")
-    print(f"Total Income:   ${total_income:,.2f}")
-    print(f"Total Expenses: ${abs(total_expenses):,.2f}")
-    print(f"Net Savings:    ${net_savings:,.2f}")
+    print(f"Total Income:   ${TotalIncome:,.2f}")
+    print(f"Total Expenses: ${abs(TotalExpenses):,.2f}")
+    print(f"Net Savings:    ${NetSavings:,.2f}")
     
-    return total_income, total_expenses, net_savings
+    return TotalIncome, TotalExpenses, NetSavings
