@@ -24,6 +24,7 @@ import csv
 import os
 import tempfile
 import uuid
+import re
 from dataclasses import dataclass, asdict
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
@@ -202,7 +203,7 @@ def validate_transaction(
     else:
         normalized["amount"] = norm_amt
 
-    # description
+    # type
     type = (type or "").strip()
     if not type:
         errors.append("Type is required.")
@@ -227,6 +228,7 @@ def create_transaction(
     datetime_str: str,
     category: str,
     amount_str: str,
+    type: str,
     description: str,
     allowed_categories: Optional[Iterable[str]] = DEFAULT_ALLOWED_CATEGORIES,
 ) -> Transaction:
@@ -237,7 +239,8 @@ def create_transaction(
     ok, errs, normalized = validate_transaction(
         datetime_str=datetime_str,
         category=category,
-        amount_str=amount_str,
+        amount=amount_str,
+        type=type,
         description=description,
         allowed_categories=allowed_categories,
     )
@@ -250,6 +253,7 @@ def create_transaction(
         datetime=normalized["datetime"],
         category=normalized["category"],
         amount=normalized["amount"],
+        type=normalized["type"],
         description=normalized["description"],
     )
 
@@ -444,6 +448,110 @@ def print_category_summary(csv_path: str) -> None:
             )
 
 
+
+# UPDATE CSV BEGIN
+
+def date():
+    
+    pattern = r"^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$"
+
+    while True:
+        date = input("Enter transaction date (yyyy-mm-dd): ")
+            
+        if not re.match(pattern,date):
+            print("Invalid format. Please enter date in mm-dd-yy format.")
+            continue
+            
+        try:
+            datetime.strptime(date, "%m-%d-%y")
+            print("Date entered:", date)
+            return date
+        except ValueError:
+            print("Invalid date! That day doesn't exist. Please try again.")
+            continue
+            
+def description():
+    while True:
+        description = input("Enter transaction description: ")
+            
+        if len(description) == 0:
+            print("Description cannot be empty")
+            continue
+        elif len(description) > 75:
+            print("Invalid! Too many characters.")
+            continue
+        else:
+            print("Description entered:", description)
+            return description
+            
+            
+def category():
+    categories = {
+        "1": "Living Expenses",
+        "2": "Food and Dining",
+        "3": "Personal & Lifestyle",
+        "4": "Healthcare & Insurance",
+        "5": "Family & Education",
+        "6": "Miscellaneous",
+        "7": "Earned Income",
+        "8": "Unearned Income"
+    }
+    while True:
+        category = input(
+            "Enter category by number:\n"
+            "1 - Living Expenses\n"
+            "2 - Food and Dining\n"
+            "3 - Personal & Lifestyle\n"
+            "4 - Healthcare & Insurance\n"
+            "5 - Family & Education\n"
+            "6 - Miscellaneous\n"
+            "7 - Earned Income\n"
+            "8 - Unearned Income\n"
+                
+        ).strip()
+            
+        if category in categories:
+            print("Category selected: ", categories[category])
+            return categories[category]
+        else:
+            print("Invalid input! Please enter a number 1 to 8.")
+   
+def amount():
+    while True:
+        amount = input("Enter transaction amount: ")
+             
+        try:
+            value = float(amount)
+            if value < 0:
+                print("Amount cannot be negative.")
+                continue
+            print("Amount entered:", f"{value:.2f}")
+            return value 
+        except ValueError:
+            print("Invalid input. Please enter numbers only.")       
+    
+    
+def typed():
+    types = {
+        "1": "Income",
+        "2": "Expense",
+    }
+    while True:
+        typed = input(
+            "Enter category by number:\n"
+            "1 - Income\n"
+            "2 - Expense\n"
+        ).strip()
+            
+        if typed in types:
+            print("Category selected: ", types[typed])
+            return types[typed]
+        else:
+            print("Invalid input! Please enter a number 1 or 2.")
+
+# UPDATE CSV END
+
+
 # UPDATE CSV BEGIN
 
 def update_transaction(
@@ -576,28 +684,42 @@ def _prompt_datetime(prompt: str) -> str:
 
 def _enter_transaction_flow(csv_path: str) -> None:
     """Interactive entry for a single transaction."""
-    print("\nEnter a new transaction")
-    print("-" * 30)
-    dt = _prompt_datetime(
-        "Datetime (e.g., 2025-09-02 14:30 or 2025-09-02T14:30): "
-    )
-    cat = _prompt_nonempty("Category: ")
-    amt = _prompt_amount("Amount (neg for expense, pos for income): ")
-    desc = _prompt_nonempty("Description: ")
+    while True:
+        date_value = date()  
+        description_value = description()
+        category_value = category() 
+        amount_value = amount()
+        typed_value = typed()  
 
-    try:
-        create_transaction(
-            csv_path,
-            datetime_str=dt,
-            category=cat,
-            amount_str=amt,
-            description=desc,
-        )
-        print("✔ Transaction saved.")
-    except ValueError as ex:
-        print(f"✖ Validation errors: {ex}")
-    except Exception as ex:
-        print(f"✖ Unexpected error: {ex}")
+        # commit to CSV
+        try:
+            create_transaction(
+                csv_path,
+                datetime_str=date_value,
+                category=category_value,
+                amount_str=amount_value,
+                type=typed_value,
+                description=description_value,
+            )
+            print("✔ Transaction saved.")
+        except ValueError as ex:
+            print(f"✖ Validation errors: {ex}")
+        except Exception as ex:
+            print(f"✖ Unexpected error: {ex}")
+        
+        # remove extra spaces and convert word to lower case
+        again = input("Do you want to enter another transaction? (yes/no): ").strip().lower()
+        
+        if again == "no":
+            print("Thanks and Gig 'Em")
+            break
+            
+        elif again == "yes":
+            continue
+        else:
+            print("Invalid input. Please enter yes or no.")
+
+    
 
 
 def _render_totals(csv_path: str) -> None:
