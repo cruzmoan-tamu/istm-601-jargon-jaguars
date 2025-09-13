@@ -806,10 +806,11 @@ def run_cli_menu(csv_path: str = "transactions.csv") -> None:
             print_category_summary(csv_path)
         elif choice == "5":
             _edit_transaction_flow(csv_path)
-        elif choice == "6":
+        elif choice == "6": # Delete option
             tx_id = input("Enter ID of the transcation to delete: ").strip()
             confirmed = input("Are you sure you want to delete this transaction? (y/n): ").strip().lower()
             if confirmed == "y":
+                # Calls the delete function from above
                 success = delete_transaction(csv_path, tx_id)
                 if success == True:
                     print("Transaction deleted.")
