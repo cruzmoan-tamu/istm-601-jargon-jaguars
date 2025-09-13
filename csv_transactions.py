@@ -1,22 +1,10 @@
-"""
-csv_transactions.py
-
-CSV-backed CRUD for personal finance transactions with validation and reporting.
-
-Schema (CSV headers):
-    id, datetime, category, amount, description
-
-- id:        UUID string
-- datetime:  ISO 8601 (e.g., "2025-09-02T14:30:00")
-- category:  non-empty string (optionally validated against an allowed set)
-- amount:    decimal string, exactly 2 fractional digits (negative or positive)
-- description: non-empty string
-
-Notes:
-- Writes are atomic: data is written to a temp file then replaced.
-- Amounts are validated with Decimal (no float rounding issues).
-- Datetimes are validated and normalized to ISO 8601 (no timezone attached).
-"""
+# PROGRAM:      Show Me The Money Financial Tracker
+# PURPOSE:      Allows user to track financial transactions
+# INPUT:        Transaction data
+# PROCESS:      Creates, Reads, Updates, and Deletes financial transactions
+# OUTPUT:       Tabulate aligned data and reports
+# HONOR CODE:   On my honor, as an Aggie, I have neither given nor received 
+#               unauthorized aid on this academic work.
 
 from __future__ import annotations
 
@@ -33,15 +21,20 @@ from typing import Iterable, List, Optional, Tuple, Dict
 from collections import defaultdict
 from tabulate import tabulate
 
+# The headers in the CSV file for financial transactions
+# These are used in both the display and data validation
 CSV_HEADERS = ["id", "datetime", "category", "amount", "type", "description"]
 
 # Optional: define an allowed set of categories.Set to None to allow any string.
+# We will add in our allowed cetefories here
 DEFAULT_ALLOWED_CATEGORIES: Optional[Iterable[str]] = None
 # Example:
 # DEFAULT_ALLOWED_CATEGORIES = {"Income", "Groceries", "Rent", "Utilities", 
 # "Dining", "Transport", "Entertainment", "Savings"}
 
 
+# The transaction class.  This allows for scricly defined properties
+# for a financial transaction
 @dataclass
 class Transaction:
     id: str
@@ -59,7 +52,7 @@ def main():
 
 
 # ---------- Utilities ----------
-
+# Validates the CSV files exists, with the proper headers
 def _ensure_csv_exists(csv_path: str) -> None:
     if not os.path.exists(csv_path):
         with open(csv_path, "w", newline="", encoding="utf-8") as f:
@@ -67,6 +60,8 @@ def _ensure_csv_exists(csv_path: str) -> None:
             writer.writeheader()
 
 
+# writes the transactions row(s) to the csv file,
+# using the headers that are configured
 def _atomic_write_rows(csv_path: str, rows: List[Dict[str, str]]) -> None:
     """Safely write all rows to CSV atomically."""
     dir_name = os.path.dirname(os.path.abspath(csv_path)) or "."
@@ -88,6 +83,8 @@ def _atomic_write_rows(csv_path: str, rows: List[Dict[str, str]]) -> None:
         raise
 
 
+# Reads the CSV file into the transaction class, setting the appropriate
+# properties
 def _read_all(csv_path: str) -> List[Transaction]:
     _ensure_csv_exists(csv_path)
     out: List[Transaction] = []
@@ -107,7 +104,8 @@ def _read_all(csv_path: str) -> List[Transaction]:
             out.append(tx)
     return out
 
-
+# Writes the transaction classes to dictionary rows and then
+# passes the values into _atomic_write_rows
 def _write_all(csv_path: str, txs: List[Transaction]) -> None:
     rows = [asdict(t) for t in txs]
     _atomic_write_rows(csv_path, rows)
@@ -115,6 +113,7 @@ def _write_all(csv_path: str, txs: List[Transaction]) -> None:
 
 # ---------- Validation ----------
 
+# converts a datetime value to ISO 8601 'YYYY-MM-DDTHH:MM:SS'
 def _parse_and_normalize_datetime(
     dt_str: str)->Tuple[Optional[str],Optional[str]]:
     """
@@ -140,7 +139,7 @@ def _parse_and_normalize_datetime(
     return None, f"Invalid datetime format: '{dt_str}'. " \
                   "Expected ISO-like (e.g., 2025-09-02T14:30:00)."
 
-
+# validation for amount, ensures its a float with 2 decimal places
 def _validate_amount(amount_str: str) -> Tuple[Optional[str], Optional[str]]:
     """
     Validate amount as Decimal with up to 2 fractional digits.
@@ -156,7 +155,7 @@ def _validate_amount(amount_str: str) -> Tuple[Optional[str], Optional[str]]:
     quantized = d.quantize(Decimal("0.01"))
     return f"{quantized:.2f}", None
 
-
+# validates the values of a transaction
 def validate_transaction(
     *,
     datetime_str: str,
@@ -222,7 +221,7 @@ def validate_transaction(
 
 
 # ---------- CRUD ----------
-
+# Creates a transactions and writes it to the CSV file
 def create_transaction(
     csv_path: str,
     *,
@@ -276,12 +275,13 @@ def create_transaction(
     _write_all(csv_path, rows)
     return tx
 
-
+# reads transaactions and returns a list of transaction classes
 def read_transactions(csv_path: str) -> List[Transaction]:
     """Return all transactions (as Transaction dataclass instances)."""
     return _read_all(csv_path)
 
-
+# reads the transaction file and returns a transaction class with the 
+# given transaction id
 def get_transaction(csv_path: str, tx_id: str) -> Optional[Transaction]:
     """Return a transaction by id, or None if not found."""
     for tx in _read_all(csv_path):
@@ -289,7 +289,8 @@ def get_transaction(csv_path: str, tx_id: str) -> Optional[Transaction]:
             return tx
     return None
 
-
+# deletes a transaction from the transaction file where the transaction
+# matches the transaction id - returns true if successful
 def delete_transaction(csv_path: str, tx_id: str) -> bool:
     """
     Delete a transaction by id.
@@ -412,8 +413,8 @@ def print_category_summary(csv_path: str) -> None:
 
 
 
-# INSERT CSV BEGIN
-
+# INSERT CSV BEGIN - used to create a transaction
+# asks user for date value - used in the CLI
 def date():
     pattern = r"^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$"
         
@@ -431,7 +432,8 @@ def date():
         except ValueError:
             print("Invalid date! That day doesn't exist. Please try again.")
             continue
-            
+
+# asks user for description value - used in the CLI          
 def description():
     while True:
         description = input("Enter transaction description: ")
@@ -446,7 +448,7 @@ def description():
             print("Description entered:", description)
             return description
             
-            
+# asks user for category value - used in the CLI           
 def category():
     categories = {
         "1": "Living Expenses",
@@ -478,6 +480,7 @@ def category():
         else:
             print("Invalid input! Please enter a number 1 to 8.")
    
+# asks user for amount value - used in the CLI
 def amount():
     while True:
         amount = input("Enter transaction amount: ")
@@ -492,7 +495,7 @@ def amount():
         except ValueError:
             print("Invalid input. Please enter numbers only.")       
     
-    
+# asks user for type value - used in the CLI
 def typed():
     types = {
         "1": "Income",
@@ -515,7 +518,8 @@ def typed():
 
 
 # UPDATE CSV BEGIN
-
+# updates a transaction with the values passed in where the transactionid
+# equals the given transaction id
 def update_transaction(
     csv_path: str,
     tx_id: str,
@@ -544,13 +548,14 @@ def update_transaction(
         if tx.id == tx_id:
             # Merge user-provided values with current ones.
             # If a new value is provided, use it; otherwise keep the old one.
-            new_dt   = datetime_str if datetime_str is not None else tx.datetime
-            new_cat  = category    if category    is not None else tx.category
-            new_amt  = amount_str  if amount_str  is not None else tx.amount
-            new_desc = description if description is not None else tx.description
-            new_type = type_str    if type_str    is not None else tx.type
+            new_dt  = datetime_str if datetime_str is not None else tx.datetime
+            new_cat = category    if category    is not None else tx.category
+            new_amt = amount_str  if amount_str  is not None else tx.amount
+            new_desc=description if description is not None else tx.description
+            new_type=type_str    if type_str    is not None else tx.type
 
-            # Validate the merged data (datetime, category, amount, type, description).
+            # Validate the merged data 
+            # (datetime, category, amount, type, description).
             # Also ensures amount sign matches the type.
             ok, errs, normalized = validate_transaction(
                 datetime_str=new_dt,
@@ -592,6 +597,7 @@ def update_transaction(
 
 # MENU FLOW BEGIN
 
+# renders a list of transactions - called by the menu in the CLI
 def _render_transactions_table(csv_path: str) -> None:
     """Pretty-print all transactions (truncate long descriptions)."""
     txs = read_transactions(csv_path)
@@ -615,7 +621,7 @@ def _render_transactions_table(csv_path: str) -> None:
     else:
         print("No transactions found.")
 
-
+# validates an empty promp when the user does not enter a value
 def _prompt_nonempty(prompt: str) -> str:
     while True:
         s = input(prompt).strip()
@@ -623,7 +629,7 @@ def _prompt_nonempty(prompt: str) -> str:
             return s
         print("Value cannot be empty. Please try again.")
 
-
+# used by the CLI prompt to get the amount value
 def _prompt_amount(prompt: str) -> str:
     """Prompt until a valid decimal with 2 places is entered."""
     while True:
@@ -634,7 +640,7 @@ def _prompt_amount(prompt: str) -> str:
         except Exception:
             print("Invalid amount. Example formats: 12.34, -45.00, 0")
 
-
+# used by the CLI prompt to get the datetime value
 def _prompt_datetime(prompt: str) -> str:
     """Accept a few common formats; normalize via your validator."""
     while True:
@@ -644,7 +650,7 @@ def _prompt_datetime(prompt: str) -> str:
             return norm
         print(err)
 
-
+# creates a transaction
 def _enter_transaction_flow(csv_path: str) -> None:
     """Interactive entry for a single transaction."""
     while True:
@@ -671,7 +677,8 @@ def _enter_transaction_flow(csv_path: str) -> None:
             print(f"✖ Unexpected error: {ex}")
         
         # remove extra spaces and convert word to lower case
-        again = input("Do you want to enter another transaction? (yes/no): ").strip().lower()
+        again = input(
+        "Do you want to enter another transaction? (yes/no): ").strip().lower()
         
         if again == "no":
             print("Thanks and Gig 'Em")
@@ -682,7 +689,7 @@ def _enter_transaction_flow(csv_path: str) -> None:
         else:
             print("Invalid input. Please enter yes or no.")
 
-
+# edits a transaction
 def _edit_transaction_flow(csv_path: str) -> None:
     tx_id = input("Enter ID of the transaction to edit: ").strip()
     tx = get_transaction(csv_path, tx_id)
@@ -730,9 +737,7 @@ def _edit_transaction_flow(csv_path: str) -> None:
     except Exception as ex:
         print(f"✖ Unexpected error: {ex}")
 
-    
-
-
+# reports to the CLI income, expenses, and net savings
 def _render_totals(csv_path: str) -> None:
     # totals = get_totals(csv_path)
     # # Show a one-row table
@@ -767,7 +772,7 @@ def _render_totals(csv_path: str) -> None:
 
     return TotalIncome, TotalExpenses, NetSavings
 
-
+# renders the menu in the CLI
 def run_cli_menu(csv_path: str = "transactions.csv") -> None:
     """
     Interactive CLI menu to view transactions, enter a transaction,
