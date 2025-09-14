@@ -13,7 +13,7 @@ import os
 import tempfile
 import uuid
 import re #checks date matches the yyyy-mm-dd pattern
-import pandas as pd
+# import pandas as pd
 from dataclasses import dataclass, asdict
 from datetime import datetime #used to check date is valid
 from decimal import Decimal, InvalidOperation
