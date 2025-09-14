@@ -1,14 +1,4 @@
 id,datetime,category,amount,type,description
-61377cbc-3198-479c-8c4a-2aa151b4b7c2,2025-09-02T14:35:00,Groceries,-54.27,expense,Weekly grocery run
-0173c5a4-a6bd-4506-af2d-633d29d4fb92,2025-09-02T14:35:00,Groceries,-54.27,expense,Weekly grocery run
-7a5ed264-12ad-4a78-924c-4780c87dee24,2025-09-02T14:35:00,Groceries,-54.27,expense,Weekly grocery run
-52c575a3-24bb-4468-9881-265bf287c46b,2025-09-02T14:35:00,Groceries,-54.27,expense,Weekly grocery run
-8c79ef15-5f45-4c7b-89ad-401dc49c7245,2025-09-02T14:35:00,Groceries,-54.27,expense,Weekly grocery run
-3631c205-88da-4b77-9808-87b1cd24266c,2025-09-02T14:35:00,Groceries,-54.27,expense,Weekly grocery run
-7532c14b-0751-425a-98fb-17682505b56f,2025-09-02T14:35:00,Groceries,-54.27,expense,Weekly grocery run
-df842a9c-4231-465f-b205-916223ebfeb9,2025-09-02T14:35:00,Groceries,-54.27,expense,Weekly grocery run
-6259c893-d504-49c9-b61c-fb61d5f856a7,2025-09-02T14:35:00,Groceries,-54.27,expense,Weekly grocery run
 2dc0942c-289f-4cd2-83fa-8a46c2001d81,2025-06-25T00:00:00,Food and Dining,-125.00,expense,Dining out Steakhouse
-352ba15a-9dcf-4d2b-8734-80dc6ad310ef,2025-09-01T00:00:00,Groceries,321.00,expense,test 123
 7aeaaa40-73e4-49ca-9ab7-1cdefe9b5ba5,2025-09-14T00:00:00,Food and Dining,-45.34,expense,Some description
 bd844ce7-34a1-412c-971c-c78f5add2b8c,2025-09-14T00:00:00,Earned Income,1000.00,income,Payday
