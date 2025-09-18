@@ -3,7 +3,7 @@
 # INPUT:        Transaction data
 # PROCESS:      Creates, Reads, Updates, and Deletes financial transactions
 # OUTPUT:       Tabulate aligned data and reports
-# HONOR CODE:   On my honor, as an Aggie, I have neither given nor received 
+# HONOR CODE:   On my honor, as an Aggie, I have neither given nor received
 #               unauthorized aid on this academic work.
 
 from __future__ import annotations
@@ -12,24 +12,26 @@ import csv
 import os
 import tempfile
 import uuid
-import re #checks date matches the yyyy-mm-dd pattern
+import re  # checks date matches the yyyy-mm-dd pattern
 import pandas as pd
 from dataclasses import dataclass, asdict
-from datetime import datetime #used to check date is valid
+from datetime import datetime  # used to check date is valid
 from decimal import Decimal, InvalidOperation
 from typing import Iterable, List, Optional, Tuple, Dict
 from collections import defaultdict
 from tabulate import tabulate
 
 # The headers in the CSV file for financial transactions
-# These are used in both the display and data validation
+# These are used in both the display and data validation1
 CSV_HEADERS = ["id", "datetime", "category", "amount", "type", "description"]
 
 # Optional: define an allowed set of categories.Set to None to allow any string.
 # We will add in our allowed cetefories here
 DEFAULT_ALLOWED_CATEGORIES: Optional[Iterable[str]] = None
+
+
 # Example:
-# DEFAULT_ALLOWED_CATEGORIES = {"Income", "Groceries", "Rent", "Utilities", 
+# DEFAULT_ALLOWED_CATEGORIES = {"Income", "Groceries", "Rent", "Utilities",
 # "Dining", "Transport", "Entertainment", "Savings"}
 
 
@@ -38,17 +40,16 @@ DEFAULT_ALLOWED_CATEGORIES: Optional[Iterable[str]] = None
 @dataclass
 class Transaction:
     id: str
-    datetime: str   # ISO 8601 string
+    datetime: str  # ISO 8601 string
     category: str
-    amount: str     # Decimal as string (e.g., "-12.34")
+    amount: str  # Decimal as string (e.g., "-12.34")
     type: str
     description: str
 
 
 # main function - the start of the program
 def main():
-    run_cli_menu("transactions.csv")
-
+    run_cli_menu("../transactions.csv")
 
 
 # ---------- Utilities ----------
@@ -91,18 +92,19 @@ def _read_all(csv_path: str) -> List[Transaction]:
     with open(csv_path, "r", newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
-            # Be tolerant to missing columns 
+            # Be tolerant to missing columns
             # (but we keep the schema strict on write)
             tx = Transaction(
                 id=row.get("id", "").strip(),
                 datetime=row.get("datetime", "").strip(),
                 category=row.get("category", "").strip(),
                 amount=row.get("amount", "").strip(),
-                type = row.get("type", "").strip(),
+                type=row.get("type", "").strip(),
                 description=row.get("description", "").strip(),
             )
             out.append(tx)
     return out
+
 
 # Writes the transaction classes to dictionary rows and then
 # passes the values into _atomic_write_rows
@@ -115,7 +117,7 @@ def _write_all(csv_path: str, txs: List[Transaction]) -> None:
 
 # converts a datetime value to ISO 8601 'YYYY-MM-DDTHH:MM:SS'
 def _parse_and_normalize_datetime(
-    dt_str: str)->Tuple[Optional[str],Optional[str]]:
+        dt_str: str) -> Tuple[Optional[str], Optional[str]]:
     """
     Accept a few common formats and normalize to ISO 8601 'YYYY-MM-DDTHH:MM:SS'.
     Returns (normalized_str, error) where one will be None.
@@ -137,7 +139,8 @@ def _parse_and_normalize_datetime(
         except ValueError:
             continue
     return None, f"Invalid datetime format: '{dt_str}'. " \
-                  "Expected ISO-like (e.g., 2025-09-02T14:30:00)."
+                 "Expected ISO-like (e.g., 2025-09-02T14:30:00)."
+
 
 # validation for amount, ensures its a float with 2 decimal places
 def _validate_amount(amount_str: str) -> Tuple[Optional[str], Optional[str]]:
@@ -145,7 +148,7 @@ def _validate_amount(amount_str: str) -> Tuple[Optional[str], Optional[str]]:
     Validate amount as Decimal with up to 2 fractional digits.
     Returns (normalized_str, error) where one will be None.
     """
-    
+
     try:
         d = Decimal(amount_str)
     except (InvalidOperation, ValueError):
@@ -155,16 +158,17 @@ def _validate_amount(amount_str: str) -> Tuple[Optional[str], Optional[str]]:
     quantized = d.quantize(Decimal("0.01"))
     return f"{quantized:.2f}", None
 
+
 # validates the values of a transaction
 def validate_transaction(
-    *,
-    datetime_str: str,
-    category: str,
-    amount: str,
-    type: str,
-    description: str,
-    allowed_categories: Optional[Iterable[str]] = DEFAULT_ALLOWED_CATEGORIES,
-    disallow_future: bool = True,
+        *,
+        datetime_str: str,
+        category: str,
+        amount: str,
+        type: str,
+        description: str,
+        allowed_categories: Optional[Iterable[str]] = DEFAULT_ALLOWED_CATEGORIES,
+        disallow_future: bool = True,
 ) -> Tuple[bool, List[str], Dict[str, str]]:
     """
     Validate fields and return (is_valid, errors, normalized_dict).
@@ -193,7 +197,7 @@ def validate_transaction(
             allowed = {c.strip() for c in allowed_categories}
             if cat not in allowed:
                 errors.append(f"Category '{cat}' is not in the allowed " \
-                               "set: {sorted(allowed)}")
+                              "set: {sorted(allowed)}")
         normalized["category"] = cat
 
     # amount
@@ -223,20 +227,20 @@ def validate_transaction(
 # ---------- CRUD ----------
 # Creates a transactions and writes it to the CSV file
 def create_transaction(
-    csv_path: str,
-    *,
-    datetime_str: str,
-    category: str,
-    amount_str: str,
-    type: str,
-    description: str,
-    allowed_categories: Optional[Iterable[str]] = DEFAULT_ALLOWED_CATEGORIES,
+        csv_path: str,
+        *,
+        datetime_str: str,
+        category: str,
+        amount_str: str,
+        type: str,
+        description: str,
+        allowed_categories: Optional[Iterable[str]] = DEFAULT_ALLOWED_CATEGORIES,
 ) -> Transaction:
     """
     Create a transaction and append it to CSV (returns the created Transaction).
     Raises ValueError on validation failure.
     """
-    
+
     ok, errs, normalized = validate_transaction(
         datetime_str=datetime_str,
         category=category,
@@ -275,12 +279,14 @@ def create_transaction(
     _write_all(csv_path, rows)
     return tx
 
+
 # reads transaactions and returns a list of transaction classes
 def read_transactions(csv_path: str) -> List[Transaction]:
     """Return all transactions (as Transaction dataclass instances)."""
     return _read_all(csv_path)
 
-# reads the transaction file and returns a transaction class with the 
+
+# reads the transaction file and returns a transaction class with the
 # given transaction id
 def get_transaction(csv_path: str, tx_id: str) -> Optional[Transaction]:
     """Return a transaction by id, or None if not found."""
@@ -288,6 +294,7 @@ def get_transaction(csv_path: str, tx_id: str) -> Optional[Transaction]:
         if tx.id == tx_id:
             return tx
     return None
+
 
 # deletes a transaction from the transaction file where the transaction
 # matches the transaction id - returns true if successful
@@ -310,7 +317,7 @@ def get_totals(csv_path: str) -> dict:
     """
     Compute totals from all transactions.
     Returns a dict with keys: 'income', 'expenses', 'net'.
-    
+
     - Income: sum of all positive amounts
     - Expenses: sum of all negative amounts (absolute value)
     - Net: income - expenses
@@ -387,7 +394,7 @@ def get_category_totals(csv_path: str) -> dict:
 
         # Net = income - expenses
         category_totals[cat]["net"] = (
-            category_totals[cat]["income"] - category_totals[cat]["expenses"]
+                category_totals[cat]["income"] - category_totals[cat]["expenses"]
         )
 
     # Convert Decimals to floats for easy JSON/export use
@@ -407,64 +414,65 @@ def print_category_summary(csv_path: str) -> None:
     print("-" * 55)
     for cat, vals in totals.items():
         print(
-                f"{cat:<20} {vals['income']:>10.2f} "
-                f"{vals['expenses']:>10.2f} {vals['net']:>10.2f}"
-            )
-
+            f"{cat:<20} {vals['income']:>10.2f} "
+            f"{vals['expenses']:>10.2f} {vals['net']:>10.2f}"
+        )
 
 
 # INSERT CSV BEGIN - used to create a transaction
 # asks user for date value - used in the CLI
 def date():
-    pattern = r"^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$" #year is 4 digits, month is between 01-12, day is between 01-31
-        
+    pattern = r"^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$"  # year is 4 digits, month is between 01-12, day is between 01-31
+
     while True:
-        date = input("Enter transaction date (yyyy-mm-dd): ") #get date from user
-            
-        if not re.match(pattern,date):
-            print("Invalid format. Please enter date in yyyy-mm-dd format.") #states that the input was invalid
-            continue
-            
-        try:
-            datetime.strptime(date, "%Y-%m-%d") #checks that the date exists
-            print("Date entered:", date) #confirms the date entered
-            return date
-        except ValueError:
-            print("Invalid date! That day doesn't exist. Please try again.") #states that the date was invalid
+        date = input("Enter transaction date (yyyy-mm-dd): ")  # get date from user
+
+        if not re.match(pattern, date):
+            print("Invalid format. Please enter date in yyyy-mm-dd format.")  # states that the input was invalid
             continue
 
-# asks user for description value - used in the CLI          
+        try:
+            datetime.strptime(date, "%Y-%m-%d")  # checks that the date exists
+            print("Date entered:", date)  # confirms the date entered
+            return date
+        except ValueError:
+            print("Invalid date! That day doesn't exist. Please try again.")  # states that the date was invalid
+            continue
+
+
+# asks user for description value - used in the CLI
 def description():
     while True:
-        description = input("Enter transaction description: ") #gets the description
-            
-        if len(description) == 0: #description cannot be blank
+        description = input("Enter transaction description: ")  # gets the description
+
+        if len(description) == 0:  # description cannot be blank
             print("Description cannot be empty")
             continue
-        elif len(description) > 75: #description is limited to 75 characters
+        elif len(description) > 75:  # description is limited to 75 characters
             print("Invalid! Too many characters.")
             continue
         else:
-            print("Description entered:", description) #state the description entered
+            print("Description entered:", description)  # state the description entered
             return description
-            
-           
+
+
 def amount():
-        while True:
-            amount = input("Enter transaction amount: ") #gets the amount from user
-             
-            try:
-                value = float(amount) #converts to float
-                if value < 0: #amount cannot be negative
-                    print("Amount cannot be negative.")
-                    continue
-                print("Amount entered:", f"{value:.2f}") #adds 2 decimal points for whole numbers and confirms amount
-                return value 
-            except ValueError:
-                print("Invalid input. Please enter numbers only.") #Invalid input
-                 
+    while True:
+        amount = input("Enter transaction amount: ")  # gets the amount from user
+
+        try:
+            value = float(amount)  # converts to float
+            if value < 0:  # amount cannot be negative
+                print("Amount cannot be negative.")
+                continue
+            print("Amount entered:", f"{value:.2f}")  # adds 2 decimal points for whole numbers and confirms amount
+            return value
+        except ValueError:
+            print("Invalid input. Please enter numbers only.")  # Invalid input
+
+
 def category():
-    #categories dictionary
+    # categories dictionary
     categories = {
         "1": "Living Expenses",
         "2": "Food and Dining",
@@ -475,7 +483,7 @@ def category():
         "7": "Earned Income",
         "8": "Unearned Income"
     }
-    #user chooses category
+    # user chooses category
     while True:
         category = input(
             "Enter category by number:\n"
@@ -487,68 +495,81 @@ def category():
             "6 - Miscellaneous\n"
             "7 - Earned Income\n"
             "8 - Unearned Income\n"
-                
+
         ).strip()
-            
+
         if category in categories:
-            print("Category selected: ", categories[category]) #confirm category selected
+            print("Category selected: ", categories[category])  # confirm category selected
             return categories[category]
         else:
             print("Invalid input! Please enter a number 1 to 8.")
-   
+
+
 # asks user for amount value - used in the CLI
 def amount():
     while True:
         amount = input("Enter transaction amount: ")
-             
+
         try:
             value = float(amount)
             if value < 0:
                 print("Amount cannot be negative.")
                 continue
             print("Amount entered:", f"{value:.2f}")
-            return value 
+            return value
         except ValueError:
-            print("Invalid input! Please enter a number 1 to 8.")    #user did not enter number between 1-8
-    
+            print("Invalid input! Please enter a number 1 to 8.")  # user did not enter number between 1-8
+
+
 # asks user for type value - used in the CLI
 def typed():
-#types dictionary
+    # types dictionary
     types = {
         "1": "Income",
         "2": "Expense",
     }
 
-    #user chooses type
+    # user chooses type
     while True:
         typed = input(
             "Enter Type by number:\n"
             "1 - Income\n"
             "2 - Expense\n"
         ).strip()
-            
+
         if typed in types:
             print("Type selected: ", types[typed])
             return types[typed]
         else:
-            print("Invalid input! Please enter a number 1 or 2.") #user did not enter numbers 1 or 2
+            print("Invalid input! Please enter a number 1 or 2.")  # user did not enter numbers 1 or 2
+
 
 # INSERT CSV END
 
 
 # UPDATE CSV BEGIN
-# updates a transaction with the values passed in where the transactionid
-# equals the given transaction id
+
+# Iterate through all transactions to find the one matching the given ID
+# Merge new values with existing ones (keep old if user didn’t provide new)
+# Validate the merged transaction fields (date, category, amount, type, description)
+# Abort and raise ValueError if validation fails
+# Normalize type to lowercase and adjust amount sign based on income/expense rules
+# Build a new Transaction object with validated, normalized values
+# Replace the old transaction in the list with the updated one
+# Save all transactions back to CSV atomically
+# Return the updated transaction to the caller
+# Raise KeyError if no transaction exists with the given ID
+
 def update_transaction(
-    csv_path: str,
-    tx_id: str,
-    *,
-    datetime_str: Optional[str] = None,
-    category: Optional[str] = None,
-    amount_str: Optional[str] = None,
-    description: Optional[str] = None,
-    type_str: Optional[str] = None,
-    allowed_categories: Optional[Iterable[str]] = DEFAULT_ALLOWED_CATEGORIES,
+        csv_path: str,
+        tx_id: str,
+        *,
+        datetime_str: Optional[str] = None,
+        category: Optional[str] = None,
+        amount_str: Optional[str] = None,
+        description: Optional[str] = None,
+        type_str: Optional[str] = None,
+        allowed_categories: Optional[Iterable[str]] = DEFAULT_ALLOWED_CATEGORIES,
 ) -> Transaction:
     """
     Update fields on an existing transaction.
@@ -566,16 +587,13 @@ def update_transaction(
     for idx, tx in enumerate(all_txs):
         if tx.id == tx_id:
             # Merge user-provided values with current ones.
-            # If a new value is provided, use it; otherwise keep the old one.
-            new_dt  = datetime_str if datetime_str is not None else tx.datetime
-            new_cat = category    if category    is not None else tx.category
-            new_amt = amount_str  if amount_str  is not None else tx.amount
-            new_desc=description if description is not None else tx.description
-            new_type=type_str    if type_str    is not None else tx.type
+            new_dt = datetime_str if datetime_str is not None else tx.datetime
+            new_cat = category if category is not None else tx.category
+            new_amt = amount_str if amount_str is not None else tx.amount
+            new_desc = description if description is not None else tx.description
+            new_type = type_str if type_str is not None else tx.type
 
-            # Validate the merged data 
-            # (datetime, category, amount, type, description).
-            # Also ensures amount sign matches the type.
+            # Validate merged data
             ok, errs, normalized = validate_transaction(
                 datetime_str=new_dt,
                 category=new_cat,
@@ -585,33 +603,38 @@ def update_transaction(
                 allowed_categories=allowed_categories,
             )
             if not ok:
-                # Abort update if validation fails
                 raise ValueError(f"Validation errors: {errs}")
+
+            # Normalize type casing
+            norm_type = normalized["type"].lower()
+
+            # Normalize amount sign to match type
+            amt_val = float(normalized["amount"])
+            if norm_type == "expense" and amt_val > 0:
+                amt_val = -amt_val
+            elif norm_type == "income" and amt_val < 0:
+                amt_val = -amt_val
+            norm_amount_str = f"{amt_val:.2f}"
 
             # Create a new Transaction object with normalized values
             updated = Transaction(
                 id=tx.id,
                 datetime=normalized["datetime"],
                 category=normalized["category"],
-                amount=normalized["amount"],
-                type=normalized["type"],
+                amount=norm_amount_str,
+                type=norm_type,
                 description=normalized["description"],
             )
 
-            # Replace the old transaction with the updated one in the list
+            # Replace and persist
             all_txs[idx] = updated
-
-            # Atomically write the updated list back to CSV
             _write_all(csv_path, all_txs)
-
-            # Return the updated transaction to caller
             return updated
 
     # If no transaction was found with the given ID, raise an error
     raise KeyError(f"Transaction with id '{tx_id}' not found.")
 
 # UPDATE CSV END
-
 
 
 # MENU FLOW BEGIN
@@ -623,9 +646,9 @@ def _render_transactions_table(csv_path: str) -> None:
     rows = []
     for t in txs:
         desc = (
-                    t.description if len(t.description) <= 40
-                    else t.description[:37] + "..."
-                )
+            t.description if len(t.description) <= 40
+            else t.description[:37] + "..."
+        )
 
         rows.append({
             "id": t.id,
@@ -640,6 +663,7 @@ def _render_transactions_table(csv_path: str) -> None:
     else:
         print("No transactions found.")
 
+
 # validates an empty promp when the user does not enter a value
 def _prompt_nonempty(prompt: str) -> str:
     while True:
@@ -647,6 +671,7 @@ def _prompt_nonempty(prompt: str) -> str:
         if s:
             return s
         print("Value cannot be empty. Please try again.")
+
 
 # used by the CLI prompt to get the amount value
 def _prompt_amount(prompt: str) -> str:
@@ -659,6 +684,7 @@ def _prompt_amount(prompt: str) -> str:
         except Exception:
             print("Invalid amount. Example formats: 12.34, -45.00, 0")
 
+
 # used by the CLI prompt to get the datetime value
 def _prompt_datetime(prompt: str) -> str:
     """Accept a few common formats; normalize via your validator."""
@@ -669,15 +695,16 @@ def _prompt_datetime(prompt: str) -> str:
             return norm
         print(err)
 
+
 # creates a transaction
 def _enter_transaction_flow(csv_path: str) -> None:
     """Interactive entry for a single transaction."""
     while True:
-        date_value = date()  
+        date_value = date()
         description_value = description()
-        category_value = category() 
+        category_value = category()
         amount_value = amount()
-        typed_value = typed()  
+        typed_value = typed()
 
         # commit to CSV
         try:
@@ -694,21 +721,38 @@ def _enter_transaction_flow(csv_path: str) -> None:
             print(f"✖ Validation errors: {ex}")
         except Exception as ex:
             print(f"✖ Unexpected error: {ex}")
-        
+
         # remove extra spaces and convert word to lower case
         again = input(
-        "Do you want to enter another transaction? (yes/no): ").strip().lower()
-        
+            "Do you want to enter another transaction? (yes/no): ").strip().lower()
+
         if again == "no":
             print("Thanks and Gig 'Em")
             break
-            
+
         elif again == "yes":
             continue
         else:
             print("Invalid input. Please enter yes or no.")
 
+
 # edits a transaction
+
+# Ask the user which transaction to edit by ID, retrieve it, or exit if not found
+# Provide a fixed menu of allowed categories (no free-text entry)
+# Show current values and let user press Enter to keep each one
+# For datetime: accept a new value or keep the old one
+# For category: show a numbered list (1–8), user picks by number or presses Enter to keep current
+# For type: accept full word or shorthand (i/e, +/−), normalize to "income" or "expense"
+# For amount and description: accept new value or keep current if blank
+# After collecting new values, call update_transaction with them
+# Validate against the same fixed categories list
+# If update succeeds, print the updated transaction in a table
+# Handle errors gracefully:
+#   - ValueError if validation fails (e.g., bad amount/date/category)
+#   - KeyError if transaction not found
+#   - Generic Exception for unexpected errors
+
 def _edit_transaction_flow(csv_path: str) -> None:
     tx_id = input("Enter ID of the transaction to edit: ").strip()
     tx = get_transaction(csv_path, tx_id)
@@ -716,12 +760,37 @@ def _edit_transaction_flow(csv_path: str) -> None:
         print("Transaction not found.")
         return
 
+    # Fixed category menu
+    CATEGORIES = [
+        "Living Expenses",
+        "Food and Dining",
+        "Personal & Lifestyle",
+        "Healthcare & Insurance",
+        "Family & Education",
+        "Miscellaneous",
+        "Earned Income",
+        "Unearned Income",
+    ]
+
     print("\nLeave a field blank to keep current value.")
+
     print(f"Current datetime:   {tx.datetime}")
     new_dt = input("New datetime: ").strip() or None
 
+    # Category selection by number only
     print(f"Current category:   {tx.category}")
-    new_cat = input("New category: ").strip() or None
+    print("Enter category by number (blank = keep current):")
+    for i, c in enumerate(CATEGORIES, start=1):
+        print(f"{i} - {c}")
+    while True:
+        raw = input("Choice [1-8 or blank]: ").strip()
+        if raw == "":
+            new_cat = None  # keep current
+            break
+        if raw.isdigit() and 1 <= int(raw) <= len(CATEGORIES):
+            new_cat = CATEGORIES[int(raw) - 1]
+            break
+        print("Invalid choice. Please enter 1-8 or press Enter to keep current.")
 
     print(f"Current type:       {tx.type}")
     new_type = input("New type (income/expense or i/e): ").strip().lower() or None
@@ -746,6 +815,7 @@ def _edit_transaction_flow(csv_path: str) -> None:
             amount_str=new_amt,
             type_str=new_type,
             description=new_desc,
+            allowed_categories=CATEGORIES,  # enforce same list during validation
         )
         print("✔ Updated:")
         print(tabulate([asdict(updated)], headers="keys", floatfmt=".2f"))
@@ -763,7 +833,7 @@ def _render_totals(csv_path: str) -> None:
     # print(tabulate([totals], headers="keys", floatfmt=".2f"))
 
     # Load CSV
-    DataFrame = pd.read_csv("transactions.csv")
+    DataFrame = pd.read_csv("../transactions.csv")
 
     # Ensure amounts are numeric
     DataFrame['amount'] = pd.to_numeric(
@@ -773,12 +843,12 @@ def _render_totals(csv_path: str) -> None:
     # Total income
     TotalIncome = DataFrame[
         DataFrame['type'].str.lower() == 'income'
-    ]['amount'].sum()
+        ]['amount'].sum()
 
     # Total expenses (absolute value of negatives)
     TotalExpenses = DataFrame[
         DataFrame['type'].str.lower() == 'expense'
-    ]['amount'].sum()
+        ]['amount'].sum()
 
     # Net savings
     NetSavings = TotalIncome + TotalExpenses
@@ -790,6 +860,7 @@ def _render_totals(csv_path: str) -> None:
     print(f"Net Savings:    ${NetSavings:,.2f}")
 
     return TotalIncome, TotalExpenses, NetSavings
+
 
 # renders the menu in the CLI
 def run_cli_menu(csv_path: str = "transactions.csv") -> None:
@@ -825,7 +896,7 @@ def run_cli_menu(csv_path: str = "transactions.csv") -> None:
             print_category_summary(csv_path)
         elif choice == "5":
             _edit_transaction_flow(csv_path)
-        elif choice == "6": # Delete option
+        elif choice == "6":  # Delete option
             tx_id = input("Enter ID of the transcation to delete: ").strip()
             confirmed = input("Are you sure you want to delete this transaction? (y/n): ").strip().lower()
             if confirmed == "y":
@@ -845,7 +916,6 @@ def run_cli_menu(csv_path: str = "transactions.csv") -> None:
 
 
 # MENU FLOW END
-
 
 
 if __name__ == "__main__":
