@@ -690,6 +690,22 @@ def _enter_transaction_flow(csv_path: str) -> None:
             print("Invalid input. Please enter yes or no.")
 
 # edits a transaction
+
+# Ask the user which transaction to edit by ID, retrieve it, or exit if not found
+# Provide a fixed menu of allowed categories (no free-text entry)
+# Show current values and let user press Enter to keep each one
+# For datetime: accept a new value or keep the old one
+# For category: show a numbered list (1–8), user picks by number or presses Enter to keep current
+# For type: accept full word or shorthand (i/e, +/−), normalize to "income" or "expense"
+# For amount and description: accept new value or keep current if blank
+# After collecting new values, call update_transaction with them
+# Validate against the same fixed categories list
+# If update succeeds, print the updated transaction in a table
+# Handle errors gracefully:
+#   - ValueError if validation fails (e.g., bad amount/date/category)
+#   - KeyError if transaction not found
+#   - Generic Exception for unexpected errors
+
 def _edit_transaction_flow(csv_path: str) -> None:
     tx_id = input("Enter ID of the transaction to edit: ").strip()
     tx = get_transaction(csv_path, tx_id)
@@ -697,12 +713,37 @@ def _edit_transaction_flow(csv_path: str) -> None:
         print("Transaction not found.")
         return
 
+    # Fixed category menu
+    CATEGORIES = [
+        "Living Expenses",
+        "Food and Dining",
+        "Personal & Lifestyle",
+        "Healthcare & Insurance",
+        "Family & Education",
+        "Miscellaneous",
+        "Earned Income",
+        "Unearned Income",
+    ]
+
     print("\nLeave a field blank to keep current value.")
+
     print(f"Current datetime:   {tx.datetime}")
     new_dt = input("New datetime: ").strip() or None
 
+    # Category selection by number only
     print(f"Current category:   {tx.category}")
-    new_cat = input("New category: ").strip() or None
+    print("Enter category by number (blank = keep current):")
+    for i, c in enumerate(CATEGORIES, start=1):
+        print(f"{i} - {c}")
+    while True:
+        raw = input("Choice [1-8 or blank]: ").strip()
+        if raw == "":
+            new_cat = None  # keep current
+            break
+        if raw.isdigit() and 1 <= int(raw) <= len(CATEGORIES):
+            new_cat = CATEGORIES[int(raw) - 1]
+            break
+        print("Invalid choice. Please enter 1-8 or press Enter to keep current.")
 
     print(f"Current type:       {tx.type}")
     new_type = input("New type (income/expense or i/e): ").strip().lower() or None
@@ -727,6 +768,7 @@ def _edit_transaction_flow(csv_path: str) -> None:
             amount_str=new_amt,
             type_str=new_type,
             description=new_desc,
+            allowed_categories=CATEGORIES,  # enforce same list during validation
         )
         print("✔ Updated:")
         print(tabulate([asdict(updated)], headers="keys", floatfmt=".2f"))
