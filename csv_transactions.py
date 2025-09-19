@@ -449,38 +449,33 @@ def description():
             return description
             
                            
-def category():
-    #categories dictionary
-    categories = {
-        "1": "Living Expenses",
-        "2": "Food and Dining",
-        "3": "Personal & Lifestyle",
-        "4": "Healthcare & Insurance",
-        "5": "Family & Education",
-        "6": "Miscellaneous",
-        "7": "Earned Income",
-        "8": "Unearned Income"
-    }
-    #user chooses category
-    while True:
-        category = input(
-            "Enter category by number:\n"
-            "1 - Living Expenses\n"
-            "2 - Food and Dining\n"
-            "3 - Personal & Lifestyle\n"
-            "4 - Healthcare & Insurance\n"
-            "5 - Family & Education\n"
-            "6 - Miscellaneous\n"
-            "7 - Earned Income\n"
-            "8 - Unearned Income\n"
-                
-        ).strip()
+def category(t):
+        categories = {
+            "Expense": {
+            "1": "Living Expenses",
+            "2": "Food and Dining",
+            "3": "Personal & Lifestyle",
+            "4": "Healthcare & Insurance",
+            "5": "Family & Education",
+            "6": "Miscellaneous"},
             
-        if category in categories:
-            print("Category selected: ", categories[category]) #confirm category selected
-            return categories[category]
-        else:
-            print("Invalid input! Please enter a number 1 to 8.")
+            "Income": {
+            "7": "Earned Income",
+            "8": "Unearned Income"}
+        }
+        
+        while True:
+            print("Enter category by number:")
+            for num, name in categories[t].items():
+                print(f"{num} - {name}")
+                
+            typed = input().strip()
+            
+            if typed in categories[t]:
+                print("Category selected: ", categories[t][typed])
+                return categories[t][typed]
+            else:
+                print("Invalid input! Please enter a valid number.")
    
 # asks user for amount value - used in the CLI
 def amount():
@@ -660,10 +655,10 @@ def _enter_transaction_flow(csv_path: str) -> None:
     """Interactive entry for a single transaction."""
     while True:
         date_value = date()  
+        typed_value = typed()          
+        category_value = category(typed_value) 
         description_value = description()
-        category_value = category() 
-        amount_value = amount()
-        typed_value = typed()  
+        amount_value = amount()  
 
         # commit to CSV
         try:
