@@ -14,6 +14,7 @@ import tempfile
 import uuid
 import re #checks date matches the yyyy-mm-dd pattern
 import pandas as pd
+import matplotlib.pyplot as plt
 from dataclasses import dataclass, asdict
 from datetime import datetime #used to check date is valid
 from decimal import Decimal, InvalidOperation
@@ -827,6 +828,88 @@ def _render_totals(csv_path: str) -> None:
 
     return TotalIncome, TotalExpenses, NetSavings
 
+
+# REPORTING GRAPHS BEGIN
+
+def plot_financials(csv_file, freq="M"):
+    """
+    Plots income, expenses, and net balance over time from a financial CSV.
+
+    Parameters:
+        csv_file (str): Path to the CSV file.
+        freq (str): Resampling frequency (D=daily, W=weekly, M=monthly, Y=yearly).
+    """
+    # Load CSV
+    df = pd.read_csv(csv_file, parse_dates=["datetime"])
+    df["amount"] = pd.to_numeric(df["amount"], errors="coerce")
+
+    # Group by time & type
+    summary = df.groupby(
+        [pd.Grouper(key="datetime", freq=freq), "type"]
+    )["amount"].sum().unstack(fill_value=0)
+
+    # Ensure both columns exist
+    summary = summary.reindex(columns=["income", "expense"], fill_value=0)
+
+    # Net balance
+    summary["net"] = summary["income"] + summary["expense"]  # (expenses are negative)
+
+    # Plot
+    plt.figure(figsize=(10,6))
+    plt.plot(summary.index, summary["income"], marker="o", label="Income", color="green")
+    plt.plot(summary.index, summary["expense"], marker="o", label="Expense", color="red")
+    plt.plot(summary.index, summary["net"], marker="o", label="Net", color="blue")
+
+    plt.title(f"Financial Report ({freq})")
+    plt.xlabel("Date")
+    plt.ylabel("Amount ($)")
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+    return summary
+
+
+def plot_category_summary(csv_file):
+    """
+    Plots total income and expenses by category from a financial CSV.
+    Expenses are shown as positive values for easier comparison.
+    
+    Parameters:
+        csv_file (str): Path to the CSV file.
+    """
+    # Load CSV
+    df = pd.read_csv(csv_file, parse_dates=["datetime"])
+    df["amount"] = pd.to_numeric(df["amount"], errors="coerce")
+
+    # Adjust amounts: make expenses positive
+    df["amount_display"] = df.apply(
+        lambda row: -row["amount"] if row["type"] == "expense" else row["amount"],
+        axis=1
+    )
+
+    # Group by category
+    category_summary = df.groupby("category")["amount_display"].sum().sort_values()
+
+    # Plot bar chart
+    plt.figure(figsize=(10, 5))
+    colors = ["red" if v > 0 and cat in df[df["type"]=="expense"]["category"].unique() else "green"
+              for cat, v in category_summary.items()]
+    
+    category_summary.plot(kind="bar", color=colors)
+
+    plt.title("Total Income & Expenses by Category")
+    plt.ylabel("Amount ($)")
+    plt.xlabel("Category")
+    plt.xticks(rotation=45, ha="right")
+    plt.tight_layout()
+    plt.show()
+
+    return category_summary
+
+# REPORTING GRAPHS END
+
 # renders the menu in the CLI
 def run_cli_menu(csv_path: str = "transactions.csv") -> None:
     """
@@ -844,6 +927,8 @@ def run_cli_menu(csv_path: str = "transactions.csv") -> None:
         "4) View category summary\n"
         "5) Edit a transaction\n"
         "6) Delete a transaction\n"
+        "7) View Income / Expenses Over Time - Line Chart\n"
+        "8) Category Summary - Bar Chart\n"
         "0) Exit and Gig'em\n"
         "Choose an option: "
     )
@@ -878,6 +963,10 @@ def run_cli_menu(csv_path: str = "transactions.csv") -> None:
                     print("Transaction not found.")
             else:
                 print("Deletion cancelled.")
+        elif choice == "7":
+            summary = plot_financials("transactions.csv", freq="ME")
+        elif choice == "8":
+            summary, category_summary = plot_category_summary("transactions.csv")
         elif choice == "0":
             print("Goodbye! 👋")
             break
