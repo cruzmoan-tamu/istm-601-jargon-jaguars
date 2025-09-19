@@ -1,0 +1,11 @@
+import pandas as pd
+
+def main() -> None:
+    # Minimal demo that proves pandas is installed and working
+    df = pd.DataFrame({"x": [1, 2, 3], "y": [10, 20, 30]})
+    desc = df.describe(include="all")
+    print("yourpkg demo — pandas is installed and working!")
+    print(desc)
+
+if __name__ == "__main__":
+    main()

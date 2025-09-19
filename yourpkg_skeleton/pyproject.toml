@@ -1,0 +1,30 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "showmethemoney"
+version = "0.1.0"
+description = "Example package that uses pandas"
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [{ name = "Your Name" }]
+license = {text = "MIT"}
+keywords = ["example", "pandas"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent"
+]
+dependencies = [
+  "pandas>=2.0,<3.0"
+]
+
+[project.urls]
+Homepage = "https://example.com/showmethemoney"
+
+[project.scripts]
+showmethemoney-run = "showmethemoney.core:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/showmethemoney"]
