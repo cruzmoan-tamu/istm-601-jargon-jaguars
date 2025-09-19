@@ -2,5 +2,4 @@ id,datetime,category,amount,type,description
 2dc0942c-289f-4cd2-83fa-8a46c2001d81,2025-06-25T00:00:00,Food and Dining,-125.00,expense,Dining out Steakhouse
 7aeaaa40-73e4-49ca-9ab7-1cdefe9b5ba5,2025-09-14T00:00:00,Food and Dining,-45.34,expense,Some description
 bd844ce7-34a1-412c-971c-c78f5add2b8c,2025-09-14T00:00:00,Earned Income,1000.00,income,Payday
-6ee95779-2214-42f9-9638-2fa23bdd6d6f,2025-09-18T00:00:00,Family & Education,-123.45,expense,test description
-27c9fd0c-5411-4e3a-be60-744a84fbf11a,2025-09-17T00:00:00,Miscellaneous,-5.36,expense,Whataburger2
+6b5f4862-a035-4462-8df8-cc6db94c2f5f,2025-09-19T00:00:00,Earned Income,28.52,income,Paper Route
