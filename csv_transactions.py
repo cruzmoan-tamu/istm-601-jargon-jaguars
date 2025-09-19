@@ -518,18 +518,28 @@ def typed():
 
 
 # UPDATE CSV BEGIN
-# updates a transaction with the values passed in where the transactionid
-# equals the given transaction id
+
+# Iterate through all transactions to find the one matching the given ID
+# Merge new values with existing ones (keep old if user didn’t provide new)
+# Validate the merged transaction fields (date, category, amount, type, description)
+# Abort and raise ValueError if validation fails
+# Normalize type to lowercase and adjust amount sign based on income/expense rules
+# Build a new Transaction object with validated, normalized values
+# Replace the old transaction in the list with the updated one
+# Save all transactions back to CSV atomically
+# Return the updated transaction to the caller
+# Raise KeyError if no transaction exists with the given ID
+
 def update_transaction(
-    csv_path: str,
-    tx_id: str,
-    *,
-    datetime_str: Optional[str] = None,
-    category: Optional[str] = None,
-    amount_str: Optional[str] = None,
-    description: Optional[str] = None,
-    type_str: Optional[str] = None,
-    allowed_categories: Optional[Iterable[str]] = DEFAULT_ALLOWED_CATEGORIES,
+        csv_path: str,
+        tx_id: str,
+        *,
+        datetime_str: Optional[str] = None,
+        category: Optional[str] = None,
+        amount_str: Optional[str] = None,
+        description: Optional[str] = None,
+        type_str: Optional[str] = None,
+        allowed_categories: Optional[Iterable[str]] = DEFAULT_ALLOWED_CATEGORIES,
 ) -> Transaction:
     """
     Update fields on an existing transaction.
@@ -547,16 +557,13 @@ def update_transaction(
     for idx, tx in enumerate(all_txs):
         if tx.id == tx_id:
             # Merge user-provided values with current ones.
-            # If a new value is provided, use it; otherwise keep the old one.
-            new_dt  = datetime_str if datetime_str is not None else tx.datetime
-            new_cat = category    if category    is not None else tx.category
-            new_amt = amount_str  if amount_str  is not None else tx.amount
-            new_desc=description if description is not None else tx.description
-            new_type=type_str    if type_str    is not None else tx.type
+            new_dt = datetime_str if datetime_str is not None else tx.datetime
+            new_cat = category if category is not None else tx.category
+            new_amt = amount_str if amount_str is not None else tx.amount
+            new_desc = description if description is not None else tx.description
+            new_type = type_str if type_str is not None else tx.type
 
-            # Validate the merged data 
-            # (datetime, category, amount, type, description).
-            # Also ensures amount sign matches the type.
+            # Validate merged data
             ok, errs, normalized = validate_transaction(
                 datetime_str=new_dt,
                 category=new_cat,
@@ -566,26 +573,32 @@ def update_transaction(
                 allowed_categories=allowed_categories,
             )
             if not ok:
-                # Abort update if validation fails
                 raise ValueError(f"Validation errors: {errs}")
+
+            # Normalize type casing
+            norm_type = normalized["type"].lower()
+
+            # Normalize amount sign to match type
+            amt_val = float(normalized["amount"])
+            if norm_type == "expense" and amt_val > 0:
+                amt_val = -amt_val
+            elif norm_type == "income" and amt_val < 0:
+                amt_val = -amt_val
+            norm_amount_str = f"{amt_val:.2f}"
 
             # Create a new Transaction object with normalized values
             updated = Transaction(
                 id=tx.id,
                 datetime=normalized["datetime"],
                 category=normalized["category"],
-                amount=normalized["amount"],
-                type=normalized["type"],
+                amount=norm_amount_str,
+                type=norm_type,
                 description=normalized["description"],
             )
 
-            # Replace the old transaction with the updated one in the list
+            # Replace and persist
             all_txs[idx] = updated
-
-            # Atomically write the updated list back to CSV
             _write_all(csv_path, all_txs)
-
-            # Return the updated transaction to caller
             return updated
 
     # If no transaction was found with the given ID, raise an error
