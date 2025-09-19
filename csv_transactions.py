@@ -455,22 +455,6 @@ def description():
             print("Description entered:", description)  # state the description entered
             return description
 
-
-def amount():
-    while True:
-        amount = input("Enter transaction amount: ")  # gets the amount from user
-
-        try:
-            value = float(amount)  # converts to float
-            if value < 0:  # amount cannot be negative
-                print("Amount cannot be negative.")
-                continue
-            print("Amount entered:", f"{value:.2f}")  # adds 2 decimal points for whole numbers and confirms amount
-            return value
-        except ValueError:
-            print("Invalid input. Please enter numbers only.")  # Invalid input
-
-
 def category():
     # categories dictionary
     categories = {
@@ -898,6 +882,11 @@ def run_cli_menu(csv_path: str = "transactions.csv") -> None:
             _edit_transaction_flow(csv_path)
         elif choice == "6":  # Delete option
             tx_id = input("Enter ID of the transcation to delete: ").strip()
+            tx = get_transaction(csv_path, tx_id)
+            if not tx:
+                print("Transaction not found.")
+            print("\nTransaction to delete:")
+            print(tabulate([asdict(tx)], headers="keys", floatfmt=".2f"))
             confirmed = input("Are you sure you want to delete this transaction? (y/n): ").strip().lower()
             if confirmed == "y":
                 # Calls the delete function from above
