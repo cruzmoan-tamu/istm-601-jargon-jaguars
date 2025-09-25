@@ -833,8 +833,8 @@ def _render_totals(csv_path: str) -> None:
 
 
 # REPORTING GRAPHS BEGIN
-
-def plot_financials(csv_file, freq="M"):
+# Takes in parameters of csv file name, start date range, and end date range
+def plot_financials(csv_file, freq="M", start_date=None, end_date=None):
     """
     Plots income, expenses, and net balance over time from a financial CSV.
 
@@ -842,9 +842,27 @@ def plot_financials(csv_file, freq="M"):
         csv_file (str): Path to the CSV file.
         freq (str): Resampling frequency (D=daily, W=weekly, M=monthly, Y=yearly).
     """
+    # Ask user for date range to filter income, expense, and net balance
+    if not start_date:
+        start_date = input("Enter start date (YYYY-MM-DD) or press Enter for earliest: ").strip()
+        start_date = start_date if start_date else None
+    if not end_date:
+        end_date = input("Enter end date (YYYY-MM-DD) or press Enter for latest: ").strip()
+        end_date = end_date if end_date else None
+
     # Load CSV
     df = pd.read_csv(csv_file, parse_dates=["datetime"])
     df["amount"] = pd.to_numeric(df["amount"], errors="coerce")
+
+    # Apply date range filter if provided
+    if start_date:
+        df = df[df["datetime"] >= pd.to_datetime(start_date)]
+    if end_date:
+        df = df[df["datetime"] <= pd.to_datetime(end_date)]
+
+    if df.empty:
+        print("No transactions found in the given date range.")
+        return None
 
     # Group by time & type
     summary = df.groupby(
@@ -1024,7 +1042,7 @@ def run_cli_menu(csv_path: str = "transactions.csv") -> None:
             print("Goodbye! 👋")
             break
         else:
-            print("Invalid option. Please choose 0–4.")
+            print("Invalid option. Please choose 1–8.")
 
 
 # MENU FLOW END
