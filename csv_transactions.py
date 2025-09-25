@@ -50,8 +50,9 @@ class Transaction:
 
 
 # main function - the start of the program
+# Update main() to pass categories path
 def main():
-    run_cli_menu("transactions.csv")
+    run_cli_menu("transactions.csv", "categories.csv")
 
 
 
@@ -107,6 +108,78 @@ def _read_all(csv_path: str) -> List[Transaction]:
             )
             out.append(tx)
     return out
+
+# ---------- Categories CSV Utilities ----------
+
+CATEGORIES_HEADERS = ["name", "type"]  # type is 'income' or 'expense'
+
+def _ensure_categories_csv_exists(categories_path: str) -> None:
+    if not os.path.exists(categories_path):
+        with open(categories_path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=CATEGORIES_HEADERS)
+            writer.writeheader()
+            defaults = [
+                {"name": "Living Expenses", "type": "expense"},
+                {"name": "Food and Dining", "type": "expense"},
+                {"name": "Personal & Lifestyle", "type": "expense"},
+                {"name": "Healthcare & Insurance", "type": "expense"},
+                {"name": "Family & Education", "type": "expense"},
+                {"name": "Miscellaneous", "type": "expense"},
+                {"name": "Other", "type": "expense"},
+                {"name": "Earned Income", "type": "income"},
+                {"name": "Unearned Income", "type": "income"},
+                {"name": "Other", "type": "income"},
+            ]
+            writer.writerows(defaults)
+
+def _read_categories(categories_path: str) -> List[Dict[str, str]]:
+    _ensure_categories_csv_exists(categories_path)
+    out: List[Dict[str, str]] = []
+    with open(categories_path, "r", newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            name = (row.get("name") or "").strip()
+            typ = (row.get("type") or "").strip().lower()
+            if name and typ in {"income", "expense"}:
+                out.append({"name": name, "type": typ})
+    return out
+
+def _write_categories(categories_path: str, rows: List[Dict[str, str]]) -> None:
+    dir_name = os.path.dirname(os.path.abspath(categories_path)) or "."
+    fd, tmp_path = tempfile.mkstemp(prefix="cat_", suffix=".csv", dir=dir_name)
+    os.close(fd)
+    try:
+        with open(tmp_path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=CATEGORIES_HEADERS)
+            writer.writeheader()
+            for r in rows:
+                writer.writerow({"name": r["name"], "type": r["type"]})
+        os.replace(tmp_path, categories_path)
+    except Exception:
+        try:
+            os.remove(tmp_path)
+        except OSError:
+            pass
+        raise
+
+def _list_categories_by_type(categories_path: str, typ: str) -> List[str]:
+    cats = [c["name"] for c in _read_categories(categories_path) if c["type"] == typ]
+    if "Other" not in cats:
+        cats.append("Other")
+    return sorted(cats, key=str.lower)
+
+def _all_category_names(categories_path: str) -> List[str]:
+    return sorted({c["name"] for c in _read_categories(categories_path)}, key=str.lower)
+
+def _category_in_use(csv_path: str, name: str) -> bool:
+    for tx in _read_all(csv_path):
+        if (tx.category or "").strip().lower() == name.strip().lower():
+            return True
+    return False
+
+# ---------- Categories CSV Utilities ----------
+
+
 
 # Writes the transaction classes to dictionary rows and then
 # passes the values into _atomic_write_rows
@@ -453,33 +526,31 @@ def description():
             return description
             
                            
-def category(t):
-        categories = {
-            "Expense": {
-            "1": "Living Expenses",
-            "2": "Food and Dining",
-            "3": "Personal & Lifestyle",
-            "4": "Healthcare & Insurance",
-            "5": "Family & Education",
-            "6": "Miscellaneous"},
-            
-            "Income": {
-            "7": "Earned Income",
-            "8": "Unearned Income"}
-        }
-        
-        while True:
-            print("Enter category by number:")
-            for num, name in categories[t].items():
-                print(f"{num} - {name}")
-                
-            typed = input().strip()
-            
-            if typed in categories[t]:
-                print("Category selected: ", categories[t][typed])
-                return categories[t][typed]
-            else:
-                print("Invalid input! Please enter a valid number.")
+#REPLACE — Old category(t) picker with file-driven picker
+
+def _select_category_from_file(categories_path: str, tx_type: str) -> str:
+    """
+    Show numbered list of categories from categories.csv filtered by tx_type.
+    Returns the chosen category name.
+    """
+    tx_type = (tx_type or "").strip().lower()
+    if tx_type not in {"income", "expense"}:
+        raise ValueError("Invalid transaction type for category selection.")
+
+    cats = _list_categories_by_type(categories_path, tx_type)
+    while True:
+        print("Enter category by number:")
+        for idx, name in enumerate(cats, start=1):
+            print(f"{idx} - {name}")
+        choice = input("Choice: ").strip()
+        if choice.isdigit() and 1 <= int(choice) <= len(cats):
+            chosen = cats[int(choice) - 1]
+            print("Category selected:", chosen)
+            return chosen
+        print("Invalid input! Please enter a valid number.")
+
+#REPLACE — Old category(t) picker with file-driven picker
+
    
 # asks user for amount value - used in the CLI
 def amount():
@@ -668,16 +739,23 @@ def _prompt_datetime(prompt: str) -> str:
         print(err)
 
 # creates a transaction
-def _enter_transaction_flow(csv_path: str) -> None:
-    """Interactive entry for a single transaction."""
-    while True:
-        date_value = date()  
-        typed_value = typed()          
-        category_value = category(typed_value) 
-        description_value = description()
-        amount_value = amount()  
+#Wire categories into the transaction flows
 
-        # commit to CSV
+def _enter_transaction_flow(csv_path: str, categories_path: str) -> None:
+    """Interactive entry for a single transaction (uses categories.csv)."""
+    _ensure_categories_csv_exists(categories_path)
+    while True:
+        date_value = date()
+        typed_value = typed()  # returns "Income" or "Expense"
+        tx_type_norm = typed_value.strip().lower()
+
+        category_value = _select_category_from_file(categories_path, tx_type_norm)
+        description_value = description()
+        amount_value = amount()  # returns string "12.34"
+
+        # Build allowed categories (names only) for validation
+        allowed = _all_category_names(categories_path)
+
         try:
             create_transaction(
                 csv_path,
@@ -686,24 +764,19 @@ def _enter_transaction_flow(csv_path: str) -> None:
                 amount_str=amount_value,
                 type=typed_value,
                 description=description_value,
+                allowed_categories=allowed,
             )
             print("✔ Transaction saved.")
         except ValueError as ex:
             print(f"✖ Validation errors: {ex}")
         except Exception as ex:
             print(f"✖ Unexpected error: {ex}")
-        
-        # remove extra spaces and convert word to lower case
-        again = input(
-        "Do you want to enter another transaction? (yes/no): ").strip().lower()
-        
+
+        again = input("Do you want to enter another transaction? (yes/no): ").strip().lower()
         if again == "no":
             print("Thanks and Gig 'Em")
             break
-            
-        elif again == "yes":
-            continue
-        else:
+        elif again != "yes":
             print("Invalid input. Please enter yes or no.")
 
 # edits a transaction
@@ -723,44 +796,20 @@ def _enter_transaction_flow(csv_path: str) -> None:
 #   - KeyError if transaction not found
 #   - Generic Exception for unexpected errors
 
-def _edit_transaction_flow(csv_path: str) -> None:
+#Wire categories into the transaction edit
+
+def _edit_transaction_flow(csv_path: str, categories_path: str) -> None:
+    _ensure_categories_csv_exists(categories_path)
     tx_id = input("Enter ID of the transaction to edit: ").strip()
     tx = get_transaction(csv_path, tx_id)
     if not tx:
         print("Transaction not found.")
         return
 
-    # Fixed category menu
-    CATEGORIES = [
-        "Living Expenses",
-        "Food and Dining",
-        "Personal & Lifestyle",
-        "Healthcare & Insurance",
-        "Family & Education",
-        "Miscellaneous",
-        "Earned Income",
-        "Unearned Income",
-    ]
-
     print("\nLeave a field blank to keep current value.")
 
     print(f"Current datetime:   {tx.datetime}")
     new_dt = input("New datetime: ").strip() or None
-
-    # Category selection by number only
-    print(f"Current category:   {tx.category}")
-    print("Enter category by number (blank = keep current):")
-    for i, c in enumerate(CATEGORIES, start=1):
-        print(f"{i} - {c}")
-    while True:
-        raw = input("Choice [1-8 or blank]: ").strip()
-        if raw == "":
-            new_cat = None  # keep current
-            break
-        if raw.isdigit() and 1 <= int(raw) <= len(CATEGORIES):
-            new_cat = CATEGORIES[int(raw) - 1]
-            break
-        print("Invalid choice. Please enter 1-8 or press Enter to keep current.")
 
     print(f"Current type:       {tx.type}")
     new_type = input("New type (income/expense or i/e): ").strip().lower() or None
@@ -769,12 +818,34 @@ def _edit_transaction_flow(csv_path: str) -> None:
             new_type = "income"
         elif new_type in {"e", "exp", "-"}:
             new_type = "expense"
+        elif new_type not in {"income", "expense"}:
+            print("Invalid type. Use income/expense (or i/e). Keeping current.")
+            new_type = None
+
+    effective_type = (new_type or tx.type).strip().lower()
+    current_cat = tx.category
+    print(f"Current category:   {current_cat}")
+    print("Select a new category (Enter to keep current):")
+    cats = _list_categories_by_type(categories_path, effective_type)
+    for i, c in enumerate(cats, start=1):
+        print(f"{i} - {c}")
+    raw = input("Choice [number or blank]: ").strip()
+    if raw == "":
+        new_cat = None
+    elif raw.isdigit() and 1 <= int(raw) <= len(cats):
+        new_cat = cats[int(raw) - 1]
+    else:
+        print("Invalid choice. Keeping current.")
+        new_cat = None
 
     print(f"Current amount:     {tx.amount}")
     new_amt = input("New amount: ").strip() or None
 
     print(f"Current description: {tx.description}")
     new_desc = input("New description: ").strip() or None
+
+    # Allowed categories for validation
+    allowed = _all_category_names(categories_path)
 
     try:
         updated = update_transaction(
@@ -785,7 +856,7 @@ def _edit_transaction_flow(csv_path: str) -> None:
             amount_str=new_amt,
             type_str=new_type,
             description=new_desc,
-            allowed_categories=CATEGORIES,  # enforce same list during validation
+            allowed_categories=allowed,
         )
         print("✔ Updated:")
         print(tabulate([asdict(updated)], headers="keys", floatfmt=".2f"))
@@ -981,26 +1052,21 @@ def monthlysavings():
 
 # REPORTING GRAPHS END
 
-# renders the menu in the CLI
-def run_cli_menu(csv_path: str = "transactions.csv") -> None:
+#Manage Categories Nested MENU START
+
+def _menu_manage_categories(categories_path: str, csv_path: str) -> None:
     """
-    Interactive CLI menu to view transactions, enter a transaction,
-    or view totals/category summary. Loops until user exits.
+    Nested menu to list/add/rename/delete categories stored in categories.csv.
     """
-    _ensure_csv_exists(csv_path)
+    _ensure_categories_csv_exists(categories_path)
 
     MENU = (
-        "\n=== SHOW ME THE MONEY!!! ===\n"
-        "\n=== Personal Finance Tracker ===\n"
-        "1) View transactions\n"
-        "2) Enter a transaction\n"
-        "3) View totals (Income / Expenses / Net)\n"
-        "4) View category summary\n"
-        "5) Edit a transaction\n"
-        "6) Delete a transaction\n"
-        "7) View Income / Expenses Over Time - Line Chart\n"
-        "8) Category Summary - Bar Chart\n"
-        "0) Exit and Gig'em\n"
+        "\n=== Manage Categories ===\n"
+        "1) List categories\n"
+        "2) Add category\n"
+        "3) Rename category\n"
+        "4) Delete category\n"
+        "0) Back\n"
         "Choose an option: "
     )
 
@@ -1008,42 +1074,191 @@ def run_cli_menu(csv_path: str = "transactions.csv") -> None:
         choice = input(MENU).strip()
 
         if choice == "1":
+            cats = _read_categories(categories_path)
+            if not cats:
+                print("No categories found.")
+            else:
+                rows = [{"name": c["name"], "type": c["type"]} for c in cats]
+                print(tabulate(rows, headers="keys"))
+        elif choice == "2":
+            name = input("New category name: ").strip()
+            typ = input("Type (income/expense): ").strip().lower()
+            if not name:
+                print("Name cannot be empty.")
+                continue
+            if typ not in {"income", "expense"}:
+                print("Type must be 'income' or 'expense'.")
+                continue
+            all_rows = _read_categories(categories_path)
+            if any(r["name"].lower() == name.lower() and r["type"] == typ for r in all_rows):
+                print("Category already exists with that type.")
+                continue
+            all_rows.append({"name": name, "type": typ})
+            _write_categories(categories_path, all_rows)
+            print("✔ Category added.")
+        elif choice == "3":
+            cats = _read_categories(categories_path)
+            if not cats:
+                print("No categories to rename.")
+                continue
+            print("Select a category to rename:")
+            for i, c in enumerate(cats, start=1):
+                print(f"{i} - {c['name']} ({c['type']})")
+            raw = input("Choice: ").strip()
+            if not raw.isdigit() or not (1 <= int(raw) <= len(cats)):
+                print("Invalid choice.")
+                continue
+            idx = int(raw) - 1
+            old = cats[idx]
+            new_name = input(f"New name for '{old['name']}' (blank = cancel): ").strip()
+            if not new_name:
+                print("Rename cancelled.")
+                continue
+            if any(r["name"].lower() == new_name.lower() and r["type"] == old["type"] for r in cats):
+                print("A category with that name and type already exists.")
+                continue
+            if _category_in_use(csv_path, old["name"]):
+                print("This category is used by existing transactions.")
+                print("Renaming will change how those appear in reports.")
+                confirm = input("Proceed? (y/n): ").strip().lower()
+                if confirm != "y":
+                    print("Rename cancelled.")
+                    continue
+            cats[idx]["name"] = new_name
+            _write_categories(categories_path, cats)
+            print("✔ Category renamed.")
+        elif choice == "4":
+            cats = _read_categories(categories_path)
+            if not cats:
+                print("No categories to delete.")
+                continue
+            print("Select a category to delete:")
+            for i, c in enumerate(cats, start=1):
+                print(f"{i} - {c['name']} ({c['type']})")
+            raw = input("Choice: ").strip()
+            if not raw.isdigit() or not (1 <= int(raw) <= len(cats)):
+                print("Invalid choice.")
+                continue
+            idx = int(raw) - 1
+            victim = cats[idx]
+            if victim["name"].lower() == "other":
+                print("Cannot delete the reserved 'Other' category.")
+                continue
+            if _category_in_use(csv_path, victim["name"]):
+                print("This category is used by existing transactions and cannot be deleted.")
+                print("Tip: rename it instead, or change those transactions first.")
+                continue
+            del cats[idx]
+            _write_categories(categories_path, cats)
+            print("✔ Category deleted.")
+        elif choice == "0":
+            break
+        else:
+            print("Invalid option. Please choose 0–4.")
+
+#Manage Categories Nested MENU END
+
+
+#Manage Transactions Nested MENU START
+
+def _menu_manage_transactions(csv_path: str, categories_path: str) -> None:
+    MENU = (
+        "\n=== Manage Transactions ===\n"
+        "1) View transactions\n"
+        "2) Add transaction\n"
+        "3) Edit transaction\n"
+        "4) Delete transaction\n"
+        "0) Back\n"
+        "Choose an option: "
+    )
+    while True:
+        choice = input(MENU).strip()
+        if choice == "1":
             _render_transactions_table(csv_path)
         elif choice == "2":
-            _enter_transaction_flow(csv_path)
+            _enter_transaction_flow(csv_path, categories_path)
         elif choice == "3":
-            _render_totals(csv_path)
+            _edit_transaction_flow(csv_path, categories_path)
         elif choice == "4":
-            print_category_summary(csv_path)
-        elif choice == "5":
-            _edit_transaction_flow(csv_path)
-        elif choice == "6": # Delete option
             tx_id = input("Enter ID of the transcation to delete: ").strip()
             tx = get_transaction(csv_path, tx_id)
             if not tx:
                 print("Transaction not found.")
+                continue
             print("\nTransaction to delete:")
             print(tabulate([asdict(tx)], headers="keys", floatfmt=".2f"))
             confirmed = input("Are you sure you want to delete this transaction? (y/n): ").strip().lower()
             if confirmed == "y":
-                # Calls the delete function from above
                 success = delete_transaction(csv_path, tx_id)
-                if success == True:
-                    print("Transaction deleted.")
-                else:
-                    print("Transaction not found.")
+                print("Transaction deleted." if success else "Transaction not found.")
             else:
                 print("Deletion cancelled.")
-        elif choice == "7":
-            summary = plot_financials("transactions.csv", freq="ME")
-        elif choice == "8":
-            summary, category_summary = plot_category_summary("transactions.csv")
+        elif choice == "0":
+            break
+        else:
+            print("Invalid option. Please choose 0–4.")
+
+#Manage Transactions Nested MENU END
+
+#Manage Report Nested MENU START
+
+def _menu_reports(csv_path: str) -> None:
+    MENU = (
+        "\n=== Reports ===\n"
+        "1) Totals (Income / Expenses / Net)\n"
+        "2) Category summary (table)\n"
+        "3) Income/Expenses/Net over time (line chart)\n"
+        "4) Category summary (bar chart)\n"
+        "0) Back\n"
+        "Choose an option: "
+    )
+    while True:
+        choice = input(MENU).strip()
+        if choice == "1":
+            _render_totals(csv_path)
+        elif choice == "2":
+            print_category_summary(csv_path)
+        elif choice == "3":
+            plot_financials(csv_path, freq="M")  # month end
+        elif choice == "4":
+            plot_category_summary(csv_path)
+        elif choice == "0":
+            break
+        else:
+            print("Invalid option. Please choose 0–4.")
+
+#Manage Report Nested MENU END
+
+
+# renders the menu in the CLI
+# Added Top-level nested menu
+
+def run_cli_menu(csv_path: str = "transactions.csv", categories_path: str = "categories.csv") -> None:
+    _ensure_csv_exists(csv_path)
+    _ensure_categories_csv_exists(categories_path)
+
+    MENU = (
+        "\n=== SHOW ME THE MONEY!!! ===\n"
+        "1) Manage transactions\n"
+        "2) Manage categories\n"
+        "3) Reports\n"
+        "0) Exit and Gig'em\n"
+        "Choose an option: "
+    )
+
+    while True:
+        choice = input(MENU).strip()
+        if choice == "1":
+            _menu_manage_transactions(csv_path, categories_path)
+        elif choice == "2":
+            _menu_manage_categories(categories_path, csv_path)
+        elif choice == "3":
+            _menu_reports(csv_path)
         elif choice == "0":
             print("Goodbye! 👋")
             break
         else:
-            print("Invalid option. Please choose 1–8.")
-
+            print("Invalid option. Please choose 0–3.")
 
 # MENU FLOW END
 
