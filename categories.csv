@@ -1,0 +1,11 @@
+name,type
+Living Expenses,expense
+Food and Dining,expense
+Personal & Lifestyle,expense
+Healthcare & Insurance,expense
+Family & Education,expense
+Miscellaneous,expense
+Other,expense
+Earned Income,income
+Unearned Income,income
+Other,income
