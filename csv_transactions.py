@@ -905,7 +905,7 @@ def _render_totals(csv_path: str) -> None:
 
 # REPORTING GRAPHS BEGIN
 # Takes in parameters of csv file name, start date range, and end date range
-def plot_financials(csv_file, freq="M", start_date=None, end_date=None):
+def plot_financials(csv_file, freq="ME", start_date=None, end_date=None):
     """
     Plots income, expenses, and net balance over time from a financial CSV.
 
@@ -1266,11 +1266,13 @@ def run_cli_menu(csv_path: str = "transactions.csv", categories_path: str = "cat
 
 if __name__ == "__main__":
     try:
-        monthlysavings()
+        # monthlysavings()
+        # call main
+        main()
     except NoDataError as e:
         print(e)
     except Exception as e:
         print("Error:", e)
-    # call main
-    main()
+    
+    
     pass
