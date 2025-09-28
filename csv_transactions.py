@@ -11,6 +11,7 @@
 #                decisions and explanations are our own. 
 
 
+# Libraries
 from __future__ import annotations
 
 import csv
@@ -74,7 +75,7 @@ def _ensure_csv_exists(csv_path: str) -> None:
 # using the headers that are configured
 def _atomic_write_rows(csv_path: str, rows: List[Dict[str, str]]) -> None:
     """Safely write all rows to CSV atomically."""
-    dir_name = os.path.dirname(os.path.abspath(csv_path)) or "."
+    dir_name = os.path.dirname(os.path.abspath(csv_path)) or "." 
     fd, tmp_path = tempfile.mkstemp(prefix="tx_", suffix=".csv", dir=dir_name)
     os.close(fd)
     try:
@@ -118,6 +119,11 @@ def _read_all(csv_path: str) -> List[Transaction]:
 
 CATEGORIES_HEADERS = ["name", "type"]  # type is 'income' or 'expense'
 
+# ensures the categories csv file exists, if not creates it with default categories
+# creates the file with default categories if it doesn't exist
+# writes headers and default categories
+# handles file creation and writing
+# used by other category functions to ensure file exists
 def _ensure_categories_csv_exists(categories_path: str) -> None:
     if not os.path.exists(categories_path):
         with open(categories_path, "w", newline="", encoding="utf-8") as f:
@@ -137,6 +143,12 @@ def _ensure_categories_csv_exists(categories_path: str) -> None:
             ]
             writer.writerows(defaults)
 
+# reads the categories from the csv file and returns a list of dictionaries
+# with name and type keys
+# filters out invalid rows (missing name or invalid type)
+# cleans whitespace and normalizes type to lowercase
+# ensures "Other" category is always present in lists
+# returns a list of valid categories
 def _read_categories(categories_path: str) -> List[Dict[str, str]]:
     _ensure_categories_csv_exists(categories_path)
     out: List[Dict[str, str]] = []
@@ -144,11 +156,16 @@ def _read_categories(categories_path: str) -> List[Dict[str, str]]:
         reader = csv.DictReader(f)
         for row in reader:
             name = (row.get("name") or "").strip()
-            typ = (row.get("type") or "").strip().lower()
+            typ = (row.get("type") or "").strip().lower() #clean values for type
             if name and typ in {"income", "expense"}:
                 out.append({"name": name, "type": typ})
     return out
 
+# writes the categories to the csv file atomically
+# expects a list of dictionaries with name and type keys
+# writes to a temp file and then renames it to ensure atomicity
+# handles exceptions and cleans up temp file if needed
+# ensures the directory exists for the categories file
 def _write_categories(categories_path: str, rows: List[Dict[str, str]]) -> None:
     dir_name = os.path.dirname(os.path.abspath(categories_path)) or "."
     fd, tmp_path = tempfile.mkstemp(prefix="cat_", suffix=".csv", dir=dir_name)
@@ -167,18 +184,24 @@ def _write_categories(categories_path: str, rows: List[Dict[str, str]]) -> None:
             pass
         raise
 
+# lists categories filtered by type (income or expense)
+# ensures "Other" is always included
+# sorts alphabetically, case-insensitive
+# returns a sorted list of category names
 def _list_categories_by_type(categories_path: str, typ: str) -> List[str]:
     cats = [c["name"] for c in _read_categories(categories_path) if c["type"] == typ]
     if "Other" not in cats:
         cats.append("Other")
     return sorted(cats, key=str.lower)
 
+# reads all categories from the file and sort alphabetically
 def _all_category_names(categories_path: str) -> List[str]:
     return sorted({c["name"] for c in _read_categories(categories_path)}, key=str.lower)
 
+# reads all transactions and checks if any transactions matches the given name
 def _category_in_use(csv_path: str, name: str) -> bool:
     for tx in _read_all(csv_path):
-        if (tx.category or "").strip().lower() == name.strip().lower():
+        if (tx.category or "").strip().lower() == name.strip().lower(): #removes white spaces and turns into lowecase
             return True
     return False
 
@@ -196,6 +219,10 @@ def _write_all(csv_path: str, txs: List[Transaction]) -> None:
 # ---------- Validation ----------
 
 # converts a datetime value to ISO 8601 'YYYY-MM-DDTHH:MM:SS'
+# accepts a few common formats
+# returns normalized string or error message
+# used by the validate_transaction function
+# validates the datetime value
 def _parse_and_normalize_datetime(
     dt_str: str)->Tuple[Optional[str],Optional[str]]:
     """
@@ -304,6 +331,17 @@ def validate_transaction(
 
 # ---------- CRUD ----------
 # Creates a transactions and writes it to the CSV file
+# Validates the values before writing
+# Returns the created transaction class
+# Raises ValueError if validation fails
+# Ensures amount sign matches type (negative for expense, positive for income)
+# Generates a unique ID for each transaction
+# Appends the new transaction to existing ones and writes all back to CSV
+# Returns the created Transaction dataclass instance
+# Raises ValueError if validation fails
+# Normalizes type to lowercase
+# Adjusts amount sign based on type
+# Ensures CSV file exists before writing
 def create_transaction(
     csv_path: str,
     *,
@@ -333,13 +371,17 @@ def create_transaction(
     # make sure type is lower
     normalized["type"] = normalized["type"].lower()
 
-    # make sure amount "sign" is correct based on transaction type
+    # This code snippet ensures that when creating a transaction, if the transaction type is "expense" and the amount is positive, it converts the amount 
+    # to a negative value. This guarantees that all expense transactions are stored with negative amounts, maintaining consistency in the data for calculations and reporting.
     if (normalized["type"] == "expense" and float(normalized["amount"]) > 0):
         normalized["amount"] = float(normalized["amount"]) * -1
-
+    
+    #This line ensures that when creating a transaction, if the type is "income" but the amount is negative, it converts the amount to positive. 
+    #This guarantees that all income transactions are stored with positive amounts, maintaining consistency in the data.
     if (normalized["type"] == "income" and float(normalized["amount"]) < 0):
         normalized["amount"] = float(normalized["amount"]) * -1
-
+    
+    # This ensures each transaction is uniquely identifiable and its data is clean and consistent before saving to the CSV file.
     tx_id = str(uuid.uuid4())
     tx = Transaction(
         id=tx_id,
@@ -350,6 +392,7 @@ def create_transaction(
         description=normalized["description"],
     )
 
+    #This sequence safely adds a new transaction to your financial records, making sure the data is stored persistently and correctly.
     _ensure_csv_exists(csv_path)
     # Append row
     rows = _read_all(csv_path)
@@ -387,7 +430,7 @@ def delete_transaction(csv_path: str, tx_id: str) -> bool:
 
 
 # ---------- Reporting (overall) ----------
-
+# computes total income, expenses, and net savings
 def get_totals(csv_path: str) -> dict:
     """
     Compute totals from all transactions.
@@ -419,24 +462,24 @@ def get_totals(csv_path: str) -> dict:
         "net": float(net),
     }
 
-
+#computes total income
 def get_total_income(csv_path: str) -> float:
     """Return total income (sum of positive amounts)."""
     return get_totals(csv_path)["income"]
 
-
+#computes total expenses
 def get_total_expenses(csv_path: str) -> float:
     """Return total expenses (sum of absolute values of negative amounts)."""
     return get_totals(csv_path)["expenses"]
 
-
+#computes net savings
 def get_net_savings(csv_path: str) -> float:
     """Return net savings (income - expenses)."""
     return get_totals(csv_path)["net"]
 
 
 # ---------- Category-level Reporting ----------
-
+# computes totals per category
 def get_category_totals(csv_path: str) -> dict:
     """
     Returns a dictionary with category-level totals.
@@ -453,7 +496,8 @@ def get_category_totals(csv_path: str) -> dict:
     category_totals = defaultdict(lambda: {"income": Decimal("0.00"),
                                            "expenses": Decimal("0.00"),
                                            "net": Decimal("0.00")})
-
+    
+    # Iterate through all transactions and accumulate totals by category
     for tx in txs:
         try:
             amt = Decimal(tx.amount)
@@ -478,13 +522,14 @@ def get_category_totals(csv_path: str) -> dict:
         for cat, totals in category_totals.items()
     }
 
-
+# pretty-prints the category totals in a table
 def print_category_summary(csv_path: str) -> None:
     """
     Pretty-print category totals in a simple table.
     """
     totals = get_category_totals(csv_path)
 
+    # Header
     print(f"{'Category':<20} {'Income':>10} {'Expenses':>10} {'Net':>10}")
     print("-" * 55)
     for cat, vals in totals.items():
@@ -532,7 +577,7 @@ def description():
             
                            
 #REPLACE — Old category(t) picker with file-driven picker
-
+# asks user for category value - used in the CLI
 def _select_category_from_file(categories_path: str, tx_type: str) -> str:
     """
     Show numbered list of categories from categories.csv filtered by tx_type.
@@ -691,6 +736,11 @@ def update_transaction(
 # MENU FLOW BEGIN
 
 # renders a list of transactions - called by the menu in the CLI
+# pretty-prints all transactions in a table
+# truncates long descriptions for better display
+# uses tabulate library for formatting
+# if no transactions found, prints a message
+# reads transactions from the CSV file
 def _render_transactions_table(csv_path: str) -> None:
     """Pretty-print all transactions (truncate long descriptions)."""
     txs = read_transactions(csv_path)
@@ -700,15 +750,17 @@ def _render_transactions_table(csv_path: str) -> None:
                     t.description if len(t.description) <= 40
                     else t.description[:37] + "..."
                 )
-
+        # displays id, datetime, category, amount, type, and truncated description
+        # formats amount to 2 decimal places
         rows.append({
             "id": t.id,
             "datetime": t.datetime,
             "category": t.category,
-            "amount": f"{Decimal(t.amount):.2f}",
+            "amount": f"{Decimal(t.amount):.2f}", 
             "type": t.type,
             "description": desc,
         })
+    # aligns columns for readability
     if rows:
         print(tabulate(rows, headers="keys", floatfmt=".2f"))
     else:
@@ -745,7 +797,11 @@ def _prompt_datetime(prompt: str) -> str:
 
 # creates a transaction
 #Wire categories into the transaction flows
-
+# Uses categories.csv for allowed categories
+# This function provides an interactive flow to enter a new transaction.
+# It prompts the user for each field, using categories from categories.csv for category selection.
+# It validates all inputs and creates the transaction in the CSV file.
+# Finally, it asks if the user wants to enter another transaction or exit.
 def _enter_transaction_flow(csv_path: str, categories_path: str) -> None:
     """Interactive entry for a single transaction (uses categories.csv)."""
     _ensure_categories_csv_exists(categories_path)
@@ -802,7 +858,11 @@ def _enter_transaction_flow(csv_path: str, categories_path: str) -> None:
 #   - Generic Exception for unexpected errors
 
 #Wire categories into the transaction edit
-
+# Uses categories.csv for allowed categories
+# This function provides an interactive flow to edit an existing transaction.
+# It prompts the user for new values, allowing them to keep current values by pressing Enter.
+# It uses the categories from categories.csv for category selection and validates all inputs.
+# Finally, it updates the transaction in the CSV file and displays the updated transaction.
 def _edit_transaction_flow(csv_path: str, categories_path: str) -> None:
     _ensure_categories_csv_exists(categories_path)
     tx_id = input("Enter ID of the transaction to edit: ").strip()
@@ -826,7 +886,12 @@ def _edit_transaction_flow(csv_path: str, categories_path: str) -> None:
         elif new_type not in {"income", "expense"}:
             print("Invalid type. Use income/expense (or i/e). Keeping current.")
             new_type = None
-
+# Determine effective type for category filtering
+# If user changed type, use that; else use existing transaction type
+# This ensures the category list matches the transaction type
+# when prompting for a new category
+# This logic ensures that the category selection is always relevant to the transaction type,
+# whether the user has changed the type or not.
     effective_type = (new_type or tx.type).strip().lower()
     current_cat = tx.category
     print(f"Current category:   {current_cat}")
@@ -852,6 +917,9 @@ def _edit_transaction_flow(csv_path: str, categories_path: str) -> None:
     # Allowed categories for validation
     allowed = _all_category_names(categories_path)
 
+    # Get all category names from categories.csv
+    # This ensures the updated category is valid
+    # even if the user changed the transaction type
     try:
         updated = update_transaction(
             csv_path,
@@ -907,12 +975,20 @@ def _render_totals(csv_path: str) -> None:
 
     return TotalIncome, TotalExpenses, NetSavings
 
-
+# MENU FLOW END
+# ---------- Reporting (with plots) ----------
 class InvalidDateRangeError(Exception):
     """Custom exception raised when start_date is after end_date."""
     pass
 
-
+# plots income, expenses, and net balance over time
+# allows user to specify date range and frequency
+# uses matplotlib for plotting
+# reads transactions from the CSV file
+# groups transactions by date and type
+# calculates net balance as income minus expenses
+# handles empty data gracefully
+# raises InvalidDateRangeError for invalid date ranges
 def plot_financials(csv_file, freq="ME", start_date=None, end_date=None):
     """
     Plots income, expenses, and net balance over time from a financial CSV.
@@ -980,6 +1056,12 @@ def plot_financials(csv_file, freq="ME", start_date=None, end_date=None):
 
     return summary
 
+# plots total income and expenses by category
+# expenses are shown as positive values for easier comparison
+# uses matplotlib for plotting
+# reads transactions from the CSV file
+# groups transactions by category
+# handles empty data gracefully
 def plot_category_summary(csv_file):
     """
     Plots total income and expenses by category from a financial CSV.
@@ -1017,6 +1099,12 @@ def plot_category_summary(csv_file):
 
     return category_summary
 
+# plots a pie chart of income vs savings for a specified month
+# prompts user for month and year
+# uses matplotlib for plotting
+# reads transactions from the CSV file
+# calculates total income, expenses, and savings
+# handles empty data gracefully
 class NoDataError(Exception):
     pass
 
@@ -1070,13 +1158,18 @@ def monthlysavings(csv_file):
 # REPORTING GRAPHS END
 
 #Manage Categories Nested MENU START
-
+# Wire categories into the management flows
+# Uses categories.csv for persistent storage
+# This function provides an interactive menu to manage categories stored in categories.csv.
+# Users can list, add, rename, or delete categories.
+# It ensures the categories file exists and handles validation and user prompts.
 def _menu_manage_categories(categories_path: str, csv_path: str) -> None:
     """
     Nested menu to list/add/rename/delete categories stored in categories.csv.
     """
     _ensure_categories_csv_exists(categories_path)
 
+    # Define menu options
     MENU = (
         "\n=== Manage Categories ===\n"
         "1) List categories\n"
@@ -1086,7 +1179,20 @@ def _menu_manage_categories(categories_path: str, csv_path: str) -> None:
         "0) Back\n"
         "Choose an option: "
     )
-
+    # Loop until user chooses to go back
+    # Each option calls the appropriate helper function
+    # Validates inputs and handles errors gracefully
+    # Uses tabulate for pretty-printing tables
+    # Ensures 'Other' category cannot be deleted
+    # Warns if renaming a category that is in use
+    # Reads and writes categories to categories.csv
+    # Checks if a category is in use by existing transactions
+    # Provides feedback on operations (success/failure)
+    # Prompts user for confirmation on destructive actions
+    # Validates category names and types
+    # Ensures no duplicate categories with same name and type
+    # Allows user to cancel operations by entering blank inputs
+    # Continues to show the menu until user chooses to exit
     while True:
         choice = input(MENU).strip()
 
@@ -1177,7 +1283,16 @@ def _menu_manage_categories(categories_path: str, csv_path: str) -> None:
 
 
 #Manage Transactions Nested MENU START
-
+# Wire categories into the management flows
+# Uses categories.csv for allowed categories
+# This function provides an interactive menu to manage transactions stored in transactions.csv.
+# Users can view, add, edit, or delete transactions.
+# It ensures the transactions file exists and uses categories from categories.csv for category selection.
+# It handles validation and user prompts.
+# Each option calls the appropriate helper function and provides feedback on operations.
+# It continues to show the menu until the user chooses to exit.
+# It reads and writes transactions to transactions.csv.
+# It validates inputs and handles errors gracefully.
 def _menu_manage_transactions(csv_path: str, categories_path: str) -> None:
     MENU = (
         "\n=== Manage Transactions ===\n"
@@ -1217,8 +1332,15 @@ def _menu_manage_transactions(csv_path: str, categories_path: str) -> None:
 
 #Manage Transactions Nested MENU END
 
-#Manage Report Nested MENU START
-
+# Manage Report Nested MENU START
+# Wire categories into the reporting flows
+# Uses categories.csv for allowed categories
+# This function provides an interactive menu to generate various financial reports.
+# Users can view totals, category summaries, and various plots.
+# It ensures the transactions file exists and uses categories from categories.csv for context.
+# It handles user prompts and calls the appropriate reporting functions.
+# Each option generates a specific report and provides feedback.
+# It continues to show the menu until the user chooses to exit.
 def _menu_reports(csv_path: str) -> None:
     MENU = (
         "\n=== Reports ===\n"
@@ -1252,7 +1374,10 @@ def _menu_reports(csv_path: str) -> None:
 
 # renders the menu in the CLI
 # Added Top-level nested menu
-
+# Ensures CSV files exist before proceeding
+# Provides options to manage transactions, categories, and view reports
+# Each option calls the appropriate nested menu function
+# Continues to show the menu until the user chooses to exit
 def run_cli_menu(csv_path: str = "transactions.csv", categories_path: str = "categories.csv") -> None:
     _ensure_csv_exists(csv_path)
     _ensure_categories_csv_exists(categories_path)
@@ -1283,7 +1408,7 @@ def run_cli_menu(csv_path: str = "transactions.csv", categories_path: str = "cat
 # MENU FLOW END
 
 
-
+# main function
 if __name__ == "__main__":
     try:
         # monthlysavings()
