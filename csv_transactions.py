@@ -5,6 +5,11 @@
 # OUTPUT:       Tabulate aligned data and reports
 # HONOR CODE:   On my honor, as an Aggie, I have neither given nor received 
 #               unauthorized aid on this academic work.
+# GENERATIVE AI: We used OpenAI’s ChatGPT 5 generative AI as a supplementary tool 
+#                for brainstorming, starting layouts and debugging. Its outputs 
+#                were reviewed and adapted before integration, and all final
+#                decisions and explanations are our own. 
+
 
 from __future__ import annotations
 
@@ -903,8 +908,11 @@ def _render_totals(csv_path: str) -> None:
     return TotalIncome, TotalExpenses, NetSavings
 
 
-# REPORTING GRAPHS BEGIN
-# Takes in parameters of csv file name, start date range, and end date range
+class InvalidDateRangeError(Exception):
+    """Custom exception raised when start_date is after end_date."""
+    pass
+
+
 def plot_financials(csv_file, freq="ME", start_date=None, end_date=None):
     """
     Plots income, expenses, and net balance over time from a financial CSV.
@@ -913,7 +921,7 @@ def plot_financials(csv_file, freq="ME", start_date=None, end_date=None):
         csv_file (str): Path to the CSV file.
         freq (str): Resampling frequency (D=daily, W=weekly, M=monthly, Y=yearly).
     """
-    # Ask user for date range to filter income, expense, and net balance
+    # Ask user for date range
     if not start_date:
         start_date = input("Enter start date (YYYY-MM-DD) or press Enter for earliest: ").strip()
         start_date = start_date if start_date else None
@@ -921,15 +929,25 @@ def plot_financials(csv_file, freq="ME", start_date=None, end_date=None):
         end_date = input("Enter end date (YYYY-MM-DD) or press Enter for latest: ").strip()
         end_date = end_date if end_date else None
 
+    # Convert to datetime (or None if not provided)
+    start_dt = pd.to_datetime(start_date) if start_date else None
+    end_dt = pd.to_datetime(end_date) if end_date else None
+
+    # Validate range
+    if start_dt is not None and end_dt is not None and start_dt > end_dt:
+        raise InvalidDateRangeError(
+            f"Invalid range: start_date ({start_dt.date()}) is after end_date ({end_dt.date()})."
+        )
+
     # Load CSV
     df = pd.read_csv(csv_file, parse_dates=["datetime"])
     df["amount"] = pd.to_numeric(df["amount"], errors="coerce")
 
-    # Apply date range filter if provided
-    if start_date:
-        df = df[df["datetime"] >= pd.to_datetime(start_date)]
-    if end_date:
-        df = df[df["datetime"] <= pd.to_datetime(end_date)]
+    # Apply date filters
+    if start_dt:
+        df = df[df["datetime"] >= start_dt]
+    if end_dt:
+        df = df[df["datetime"] <= end_dt]
 
     if df.empty:
         print("No transactions found in the given date range.")
@@ -947,7 +965,7 @@ def plot_financials(csv_file, freq="ME", start_date=None, end_date=None):
     summary["net"] = summary["income"] + summary["expense"]  # (expenses are negative)
 
     # Plot
-    plt.figure(figsize=(10,6))
+    plt.figure(figsize=(10, 6))
     plt.plot(summary.index, summary["income"], marker="o", label="Income", color="green")
     plt.plot(summary.index, summary["expense"], marker="o", label="Expense", color="red")
     plt.plot(summary.index, summary["net"], marker="o", label="Net", color="blue")
@@ -961,7 +979,6 @@ def plot_financials(csv_file, freq="ME", start_date=None, end_date=None):
     plt.show()
 
     return summary
-
 
 def plot_category_summary(csv_file):
     """
@@ -980,7 +997,7 @@ def plot_category_summary(csv_file):
         lambda row: -row["amount"] if row["type"] == "expense" else row["amount"],
         axis=1
     )
-
+    
     # Group by category
     category_summary = df.groupby("category")["amount_display"].sum().sort_values()
 
@@ -1003,7 +1020,7 @@ def plot_category_summary(csv_file):
 class NoDataError(Exception):
     pass
 
-def monthlysavings():
+def monthlysavings(csv_file):
     # Load CSV with all relevant columns
     df = pd.read_csv(
         "transactions.csv",
@@ -1209,6 +1226,7 @@ def _menu_reports(csv_path: str) -> None:
         "2) Category summary (table)\n"
         "3) Income/Expenses/Net over time (line chart)\n"
         "4) Category summary (bar chart)\n"
+        "5) Monthly Report (pie chart)\n"
         "0) Back\n"
         "Choose an option: "
     )
@@ -1222,6 +1240,8 @@ def _menu_reports(csv_path: str) -> None:
             plot_financials(csv_path, freq="M")  # month end
         elif choice == "4":
             plot_category_summary(csv_path)
+        elif choice == "5":
+            monthlysavings(csv_path)
         elif choice == "0":
             break
         else:
