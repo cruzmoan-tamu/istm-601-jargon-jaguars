@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{f6657992-6b72-4e64-b264-70059ab2115e}</ProjectGuid>
     <ProjectHome />
-    <StartupFile>csv_transactions.py</StartupFile>
+    <StartupFile>gui_app.py</StartupFile>
     <SearchPath />
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
