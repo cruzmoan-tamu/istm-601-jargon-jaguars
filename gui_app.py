@@ -7,13 +7,17 @@ from tkinter import ttk, messagebox, simpledialog, filedialog
 from datetime import datetime
 from decimal import Decimal
 
+
+
 # Matplotlib embedding
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 
+from typing import Optional
+
 # === IMPORT YOUR BACKEND ===
 # If your file is named differently, change this import to match.
-from show_me_the_money import (
+from csv_transactions import (
     # data structures
     Transaction,
 
@@ -70,7 +74,7 @@ class App(tk.Tk):
     def confirm(self, msg: str) -> bool:
         return messagebox.askyesno("Confirm", msg, parent=self)
 
-    def prompt_date(self, initial: str = "") -> str | None:
+    def prompt_date(self, initial: str = "") -> Optional[str]:
         while True:
             val = simpledialog.askstring(
                 "Date",
@@ -85,6 +89,33 @@ class App(tk.Tk):
                 self.errbox(e)
             else:
                 return norm[:10]
+
+    # # ----- Report Helpers ---
+    # def _run_cli_totals(self):
+    #     # prints to console
+    #     totals = get_totals(self.csv_path)
+    #     self.toast(f"Income: {totals['income']:.2f}\nExpenses: {totals['expenses']:.2f}\nNet: {totals['net']:.2f}")
+
+    # def _run_cli_cat_tbl(self):
+    #     # uses your existing pretty-printer if you prefer, or just reuse get_category_totals
+    #     data = get_category_totals(self.csv_path)
+    #     self.toast(f"Categories: {len(data)} (see console)")
+    #     # optionally print to console:
+    #     for k, v in data.items():
+    #         print(k, v)
+
+    # def _run_cli_line(self):
+    #     from csv_transactions import plot_financials
+    #     plot_financials(self.csv_path, freq="M", start_date=None, end_date=None)
+
+    # def _run_cli_bar(self):
+    #     from csv_transactions import plot_category_summary
+    #     plot_category_summary(self.csv_path)
+
+    # def _run_cli_pie(self):
+    #     from csv_transactions import monthlysavings
+    #     monthlysavings(self.csv_path)
+
 
     # ---------- UI ----------
     def _build_ui(self):
@@ -101,6 +132,15 @@ class App(tk.Tk):
         helpmenu.add_command(label="About", command=lambda: self.toast("Show Me The Money — Tkinter GUI\nGig 'Em!"))
         menubar.add_cascade(label="Help", menu=helpmenu)
         self.config(menu=menubar)
+
+        # # add reports to menu
+        # reportmenu = tk.Menu(menubar, tearoff=0)
+        # reportmenu.add_command(label="CLI Totals (print)", command=lambda: self._run_cli_totals())
+        # reportmenu.add_command(label="CLI Category Summary (print)", command=lambda: self._run_cli_cat_tbl())
+        # reportmenu.add_command(label="CLI Line Chart (prompts)", command=lambda: self._run_cli_line())
+        # reportmenu.add_command(label="CLI Category Bar", command=lambda: self._run_cli_bar())
+        # reportmenu.add_command(label="CLI Monthly Pie (prompts YYYY-MM)", command=lambda: self._run_cli_pie())
+        # menubar.add_cascade(label="Run CLI Reports", menu=reportmenu)
 
         # tabs
         self.nb = ttk.Notebook(self)

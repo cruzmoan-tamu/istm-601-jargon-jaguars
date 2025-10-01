@@ -20,6 +20,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="csv_transactions.py" />
+    <Compile Include="gui_app.py" />
     <Compile Include="Maggie.py" />
     <Compile Include="test_csv_transactions.py" />
     <Compile Include="totals.py" />
