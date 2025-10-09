@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{f6657992-6b72-4e64-b264-70059ab2115e}</ProjectGuid>
     <ProjectHome />
-    <StartupFile>csv_transactions.py</StartupFile>
+    <StartupFile>gui.py</StartupFile>
     <SearchPath />
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
@@ -20,6 +20,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="csv_transactions.py" />
+    <Compile Include="gui.py" />
     <Compile Include="Maggie.py" />
     <Compile Include="test_csv_transactions.py" />
     <Compile Include="totals.py" />

@@ -1,5 +1,5 @@
 # gui_app.py
-# Tkinter GUI for "Show Me The Money" — uses the existing CSV/CRUD/validation logic.
+# Tkinter GUI for "Show Me The Money" â€” uses the existing CSV/CRUD/validation logic.
 # Run with: python gui_app.py
 
 import tkinter as tk
@@ -54,7 +54,7 @@ DEFAULT_CAT_CSV = "categories.csv"
 class App(tk.Tk):
     def __init__(self, csv_path=DEFAULT_TX_CSV, categories_path=DEFAULT_CAT_CSV):
         super().__init__()
-        self.title("Show Me The Money� Financial Tracker")
+        self.title("'Show Me The Money' Financial Tracker")
         self.geometry("1100x720")
 
         self.csv_path = csv_path
@@ -126,14 +126,14 @@ class App(tk.Tk):
         # menu
         menubar = tk.Menu(self)
         filemenu = tk.Menu(menubar, tearoff=0)
-        filemenu.add_command(label="Open Transactions CSV…", command=self.open_csv)
-        filemenu.add_command(label="Export CSV Copy…", command=self.export_csv_copy)
+        filemenu.add_command(label="Open Transactions CSVâ€¦", command=self.open_csv)
+        filemenu.add_command(label="Export CSV Copyâ€¦", command=self.export_csv_copy)
         filemenu.add_separator()
         filemenu.add_command(label="Exit", command=self.destroy)
         menubar.add_cascade(label="File", menu=filemenu)
 
         helpmenu = tk.Menu(menubar, tearoff=0)
-        helpmenu.add_command(label="About", command=lambda: self.toast("Show Me The Money — Tkinter GUI\nGig 'Em!"))
+        helpmenu.add_command(label="About", command=lambda: self.toast("Show Me The Money â€” Tkinter GUI\nGig 'Em!"))
         menubar.add_cascade(label="Help", menu=helpmenu)
         self.config(menu=menubar)
 
